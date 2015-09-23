@@ -13,6 +13,8 @@
 #define TOPIC_SIZE 25
 #define NR_TOPICS 5
 #define AWT_STRING 128
+#define TOPICID_INDEX 4
+#define LINE_READ_SIZE 128
 
 int main(int argc, char *argv[]){
 	int option = 0;
@@ -24,14 +26,20 @@ int main(int argc, char *argv[]){
 	int addrlen;
 	
 	char buffer[BUFFER_SIZE];
-
-	char topic[TOPIC_SIZE];
-	char awtString[AWT_STRING] = "AWT ";
 	
 	FILE *fp;
+	
 	int i;
+	char topic[TOPIC_SIZE];
+	char awtString[AWT_STRING] = "AWT ";
 	char nrTopics[2];
-
+	
+	int topicID;
+	int linesRead = 1;
+	char awtesString[AWT_STRING] = "AWTES ";
+	char lineRead[LINE_READ_SIZE];
+	char *pch;
+	
 	while ((option = getopt(argc, argv, ":p")) != -1){
 		switch (option){
 			case 'p': 
@@ -45,7 +53,7 @@ int main(int argc, char *argv[]){
 	
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd==-1){
-		fprintf(stderr, "Erro ao criar o socket UDP"); /*colocamos o errno?*/
+		fprintf(stderr, "Erro ao criar o socket UDP"); /*do we use errno?*/
 		exit(EXIT_FAILURE);
 	}
 	
@@ -58,47 +66,73 @@ int main(int argc, char *argv[]){
 	
 	addrlen = sizeof(clientaddr);
 	
-	recvfrom(fd, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientaddr, &addrlen);
-	
-	if (strncmp(buffer, "TQR", 3) == 0){
-		fp = fopen("topics.txt", "r");
-		if(fp == NULL){
-			fprinf(stderr, "Erro ao abrir o ficheiro topics.txt");
-			exit(EXIT_FAILURE);
-		} 
-		else{
-			sprintf(nrTopics, "%d", NR_TOPICS);
-			strcat(awtString, nrTopics);
-			strcat(awtString, " ");
-			
-			for(i = 0; i < NR_TOPICS-1; i++){
+	while(1){ //when do i stop receiving commands??
+		recvfrom(fd, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientaddr, &addrlen);
+		
+		if (strncmp(buffer, "TQR", 3) == 0){
+			fp = fopen("topics.txt", "r");
+			if(fp == NULL){
+				fprintf(stderr, "Erro ao abrir o ficheiro topics.txt");
+				exit(EXIT_FAILURE);
+			} 
+			else{
+				sprintf(nrTopics, "%d", NR_TOPICS);
+				strcat(awtString, nrTopics);
+				strcat(awtString, " ");
+				
+				for(i = 0; i < NR_TOPICS-1; i++){
+					fscanf(fp, "%s%*[^\n]", topic);
+					strcat(awtString, topic);
+					strcat(awtString, " ");
+				}
 				fscanf(fp, "%s%*[^\n]", topic);
 				strcat(awtString, topic);
-				strcat(awtString, " ");
-			}
-			fscanf(fp, "%s%*[^\n]", topic);
-			strcat(awtString, topic);
-			strcat(awtString, "\n"); 
+				strcat(awtString, "\n"); 
 
-			sendto(fd, awtString, strlen(awtString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
-			
-			fclose(fp);
+				sendto(fd, awtString, strlen(awtString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+				
+				fclose(fp);
+			}
+			// !! MISSING !! no quizzes in topics.txt --> reply is string "ERR"
 		}
-		//if the TQR request is not correctly formulated the reply is string "ERR"
+		else if (strncmp(buffer, "TER", 3) == 0){
+			topicID = buffer[TOPICID_INDEX];
+			
+			fp = fopen("topics.txt", "r");
+			if(fp == NULL){
+				fprintf(stderr, "Erro ao abrir o ficheiro topics.txt");
+				exit(EXIT_FAILURE);
+			} 
+			else{
+				while (fgets(lineRead, sizeof(lineRead), fp) != NULL){
+					if (linesRead == topicID){
+						break;
+					}
+					else{
+						linesRead++;
+					}
+				}
+				linesRead = 1;
+				
+				pch = strtok (lineRead," "); //topic name
+				pch = strtok (NULL, " "); //topic id address
+				strcat(awtesString, pch);
+				strcat(awtesString, " ");
+				pch = strtok (NULL, " "); //topic port number (with \n)
+				strcat(awtesString, pch);
+				
+				printf ("%s", awtesString);
+				sendto(fd, awtesString, strlen(awtesString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+						
+				fclose(fp);
+			}
+			// !! MISSING !! invalid topic number --> reply is string "ERR"
+			
+		}
+		else{
+			//...
+		}
 	}
-	else if (strncmp(buffer, "TER", 3) == 0){
-		//...
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	//sendto(fd, msg, strlen(msg)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
-	
 	close(fd);
 	
 	return 0;
