@@ -4,6 +4,7 @@ CC=gcc
 EXECS=TES ECP user
 SOURCES=$(wildcard ./src/TES/*.c)
 OBJECTS=$(SOURCES:.c=.o)
+HEADERS=${./src/utils.h}
 
 TES: tes.o tes_utils.o
 	$(CC) $(CCFLAGS) -o $@ $<
@@ -11,7 +12,7 @@ TES: tes.o tes_utils.o
 tes.o: ./src/TES/tes.c ./src/TES/tes.h
 	$(CC) $(CCFLAGS) -c -o $@ $<
 
-tes_utils.o: ./src/TES/tes_utils.c ./src/TES/tes_utils.h
+tes_utils.o: ./src/TES/tes_utils.c ./src/TES/tes_utils.h $(HEADERS)
 	$(CC) $(CCFLAGS) -c -o $@ $<
 
 clean:
