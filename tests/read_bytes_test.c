@@ -1,8 +1,10 @@
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <fcntl.h> // open
 
-#include "../../src/utils.h"
+#include "../src/utils.h"
 
 void test_read_bytes() {
     const int file = open("./read_bytes_test.txt", O_RDONLY);
