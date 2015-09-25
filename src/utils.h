@@ -2,7 +2,13 @@
 #define __UTILS_H__
 
 
-#define FAIL        return fail("error")
+// WARNING
+//
+// Avoid the *FAIL macros, as the applications must not crash!
+// Use of perror is encouraged, but ensure that your application is exiting
+// cleanly and only when strictly necessary (like in the eminence of the of the
+// world).
+#define FAIL return fail("error")
 #define MAY_FAIL(X) if ((X) == -1) FAIL
 
 #define PORT         59000 + GROUP_NUMBER
