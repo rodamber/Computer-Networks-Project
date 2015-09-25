@@ -2,7 +2,9 @@
 #define __UTILS_H__
 
 
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 
 #define FAIL        return fail("error")
