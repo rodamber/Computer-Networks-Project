@@ -14,18 +14,20 @@
 #define PORT         59000 + GROUP_NUMBER
 #define GROUP_NUMBER 9
 
-#define REQUEST_MAX_SIZE  10 * 1024
-#define REQUEST_TYPE_SIZE 3
+#define REQUEST_MAX_PARAMETERS 8
+#define REQUEST_MAX_SIZE       10 * 1024
+#define REQUEST_TYPE_SIZE      3
 
 
 // Helper function to indicate failure. Beware that this may not be a clean a
 // way to exit the program, e.g., if you need to free resources.
 int fail(const char * const msg);
 
-// Attempts to read nbytes bytes of data from the object referenced by the
-// descriptor fd into the buffer pointed to by buf. If successful, returns 0.
-// Otherwise, returns -1 and the global variable errno is set to indicate the
-// error.
+// Attempts to read nbytes bytes of data (or the whole file if the file has less
+// than nbytes bytes) from the object referenced by the descriptor fd into the
+// buffer pointed to by buf. If successful, returns the actual number of bytes
+// read. Otherwise, returns -1 and the global variable errno is set to indicate
+// the error.
 int read_bytes(const int fd, const unsigned nbytes, char * buf);
 
 // Basic representation of a client-server request/reply.
@@ -36,7 +38,20 @@ struct msg {
 };
 
 // msg representation of an error
-const struct msg error_reply;
+const struct msg error_msg;
+
+// Creates a new msg structure. Accepts a string consisting of a request type
+// and its parameters space separated, e.g., "type p1 p2 p3 p4".
+// The user then should free the resources (for example, using free_msg).
+struct msg * new_msg(const char * str);
+
+// Duplicates a message, pretty much like strdup duplicates a string.
+struct msg * msgdup(const struct msg * const m);
+
+// Frees the resources allocated when creating a msg.
+// Only use when all the resources regarding the msg tofree where manually
+// allocated.
+void free_msg(struct msg * tofree);
 
 // Converts a struct msg to a string according to the project protocol.
 // So if msg has type t and parameters p1, p2, ..., pn, the resulting string

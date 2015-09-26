@@ -15,13 +15,55 @@ int read_bytes(const int fd, const unsigned nbytes, char * buf) {
     unsigned bytes_read = 0;
     while (bytes_read < nbytes) {
         const int res = read(fd, buf + bytes_read, nbytes - bytes_read);
-        if (res < 1) return res;
+
+        if (res == -1) return -1;
+        if (res ==  0) return bytes_read;
+
         bytes_read += res;
     }
-    return 0;
+    return bytes_read;
 }
 
-const struct msg error_reply = { .type = "ERR" };
+const struct msg error_msg = { .type = "ERR" };
+
+struct msg * new_msg(const char * const str) {
+    struct msg * m = msgdup(&error_msg);
+
+    char *string = strdup(str);
+    char *token;
+
+    if ((token = strsep(&string, " ")) != NULL) {
+        m->type = token;
+    }
+
+    int i = 0;
+    while ((token = strsep(&string, " ")) != NULL) {
+        m->parameters[i++] = token;
+    }
+
+    return m;
+}
+
+struct msg * msgdup(const struct msg * const m) {
+    struct msg * dup  = malloc(sizeof(struct msg));
+    dup->type         = strdup(m->type);
+    dup->parameters   = malloc(sizeof(char *) * m->n_parameters);
+    dup->n_parameters = m->n_parameters;
+
+    for (unsigned i = 0; i < m->n_parameters; ++i) {
+        dup->parameters[i] = strdup(m->parameters[i]);
+    }
+    return dup;
+}
+
+void free_msg(struct msg * tofree) {
+    free(tofree->type);
+    for (unsigned i = 0; i < tofree->n_parameters; ++i) {
+        free(tofree->parameters[i]);
+    }
+    free(tofree->parameters);
+    free(tofree);
+}
 
 char * msg_to_string(const struct msg * const m) {
     char * buffer = malloc(sizeof(char) * REQUEST_MAX_SIZE);
