@@ -66,7 +66,7 @@ int main(int argc, char *argv[]){
 	
 	addrlen = sizeof(clientaddr);
 	
-	while(1){ //when do i stop receiving commands??
+	while(1){
 		recvfrom(fd, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientaddr, &addrlen);
 		
 		if (strncmp(buffer, "TQR", 3) == 0){
@@ -75,25 +75,22 @@ int main(int argc, char *argv[]){
 				fprintf(stderr, "Erro ao abrir o ficheiro topics.txt");
 				exit(EXIT_FAILURE);
 			} 
-			else{
-				sprintf(nrTopics, "%d", NR_TOPICS);
-				strcat(awtString, nrTopics);
-				strcat(awtString, " ");
-				
-				for(i = 0; i < NR_TOPICS-1; i++){
-					fscanf(fp, "%s%*[^\n]", topic);
-					strcat(awtString, topic);
-					strcat(awtString, " ");
-				}
+			sprintf(nrTopics, "%d", NR_TOPICS);
+			strcat(awtString, nrTopics);
+			strcat(awtString, " ");
+			
+			for(i = 0; i < NR_TOPICS-1; i++){
 				fscanf(fp, "%s%*[^\n]", topic);
 				strcat(awtString, topic);
-				strcat(awtString, "\n"); 
-
-				sendto(fd, awtString, strlen(awtString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
-				
-				fclose(fp);
+				strcat(awtString, " ");
 			}
-			// !! MISSING !! no quizzes in topics.txt --> reply is string "ERR"
+			fscanf(fp, "%s%*[^\n]", topic);
+			strcat(awtString, topic);
+			strcat(awtString, "\n"); 
+
+			sendto(fd, awtString, strlen(awtString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+			
+			fclose(fp);
 		}
 		else if (strncmp(buffer, "TER", 3) == 0){
 			topicID = buffer[TOPICID_INDEX];
@@ -103,34 +100,32 @@ int main(int argc, char *argv[]){
 				fprintf(stderr, "Erro ao abrir o ficheiro topics.txt");
 				exit(EXIT_FAILURE);
 			} 
-			else{
-				while (fgets(lineRead, sizeof(lineRead), fp) != NULL){
-					if (linesRead == topicID){
-						break;
-					}
-					else{
-						linesRead++;
-					}
+			while (fgets(lineRead, sizeof(lineRead), fp) != NULL){
+				if (linesRead == topicID){
+					break;
 				}
-				linesRead = 1;
-				
-				pch = strtok (lineRead," "); //topic name
-				pch = strtok (NULL, " "); //topic id address
-				strcat(awtesString, pch);
-				strcat(awtesString, " ");
-				pch = strtok (NULL, " "); //topic port number (with \n)
-				strcat(awtesString, pch);
-				
-				printf ("%s", awtesString);
-				sendto(fd, awtesString, strlen(awtesString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
-						
-				fclose(fp);
+				else{
+					linesRead++;
+				}
 			}
-			// !! MISSING !! invalid topic number --> reply is string "ERR"
+			linesRead = 1;
 			
+			pch = strtok (lineRead," "); //topic name
+			pch = strtok (NULL, " "); //topic id address
+			strcat(awtesString, pch);
+			strcat(awtesString, " ");
+			pch = strtok (NULL, " "); //topic port number (with \n)
+			strcat(awtesString, pch);
+
+			sendto(fd, awtesString, strlen(awtesString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+					
+			fclose(fp);
+		}
+		else if(strncmp(buffer, "IQR", 3) == 0){
+			//...
 		}
 		else{
-			//...
+			sendto(fd, "ERR\n", strlen("ERR\n")+1, 0, (struct sockaddr*)&clientaddr, addrlen);
 		}
 	}
 	close(fd);
