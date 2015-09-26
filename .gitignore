@@ -1,2 +1,3 @@
-run_all_tests
+tests/run_all_tests
+src/TES/TES
 *.o
