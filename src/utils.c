@@ -40,6 +40,7 @@ struct msg * new_msg(const char * const str) {
     while ((token = strsep(&string, " ")) != NULL) {
         m->parameters[i++] = token;
     }
+    m->n_parameters = i;
 
     return m;
 }
