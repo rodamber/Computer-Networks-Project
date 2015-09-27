@@ -8,11 +8,13 @@
 #define STR_HELPER(X) #X
 #define STR(X)        STR_HELPER(X)
 
-struct msg parse_request    (const char * const request);
-struct msg parse_rqt_request(const char * const request);
-struct msg parse_rqs_request(const char * const request);
+struct * msg parse_request    (const char * const request);
+struct * msg parse_rqt_request(const char * const request);
+struct * msg parse_rqs_request(const char * const request);
 
-struct msg reply_request(const struct msg * const request);
+struct * msg reply_request    (const struct msg * const request);
+struct * msg reply_rqt_request(const struct msg * const request);
+struct * msg reply_rqs_request(const struct msg * const request);
 
 
 #endif // __TES_UTILS_H__
