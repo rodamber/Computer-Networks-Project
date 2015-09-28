@@ -1,3 +1,4 @@
 tests/run_all_tests
 src/TES/TES
 *.o
+*.d
