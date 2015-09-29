@@ -19,4 +19,8 @@
 #include <netdb.h>
 #include <string.h>
 
+void TQR_command(char* awtString);
+void TER_command(char* awtesString, int topicID);
+void IQR_command(char* buffer, char* awiString);
+
 #endif // __ECP_UTILS_H__
