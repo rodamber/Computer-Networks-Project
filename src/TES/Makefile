@@ -1,10 +1,10 @@
-CCFLAGS=-Wall -Wextra -pedantic -g
-CC=gcc
+CXXFLAGS=-Wall -Wextra -pedantic -g
+CXX=g++
 
 EXEC=TES
-SOURCES=$(wildcard *.c)
-OBJECTS=$(SOURCES:.c=.o)
-HEADERS=$(SOURCES:.c=.h)
+SOURCES=$(wildcard *.cpp)
+OBJECTS=$(SOURCES:.cpp=.o)
+HEADERS=$(SOURCES:.cpp=.hpp)
 
 run: all
 	./$(EXEC)
@@ -12,18 +12,15 @@ run: all
 all: $(EXEC)
 
 $(EXEC): $(OBJECTS) utils.o
-	$(CC) $(CCFLAGS) $(OBJECTS) utils.o -o $(EXEC)
+	$(CXX) $(CXXFLAGS) $(OBJECTS) utils.o -o $(EXEC)
 
 -include $(OBJECTS:.o=.d)
 
-%.o: %.c
-	$(CC) -MMD -c $(CCFLAGS) -o $@ $<
-
-#utils.o: ../utils.c ../utils.h
-#	$(CC) $(CCFLAGS) -c -g -o utils.o $<
+%.o: %.cpp
+	$(CXX) -MMD -c $(CXXFLAGS) -o $@ $<
 
 clean:
-	rm -f $(EXEC) $(OBJECTS) #utils.o
+	rm -f $(EXEC) $(OBJECTS)
 
 cleand:
 	rm -f *.d
