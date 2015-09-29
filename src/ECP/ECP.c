@@ -8,7 +8,7 @@ void TQR_command(char* awtString){
 	
 	fp = fopen("topics.txt", "r");
 	if(fp == NULL){
-		fprintf(stderr, "Erro ao abrir o ficheiro topics.txt\n");
+		fprintf(stderr, "Error opening topics.txt\n");
 		exit(EXIT_FAILURE);
 	} 
 	
@@ -38,7 +38,7 @@ void TER_command(char* awtesString, int topicID){
 	
 	fp = fopen("topics.txt", "r");
 	if(fp == NULL){
-		fprintf(stderr, "Erro ao abrir o ficheiro topics.txt\n");
+		fprintf(stderr, "Error opening topics.txt\n");
 		exit(EXIT_FAILURE);
 	} 
 	while (fgets(lineRead, sizeof(lineRead), fp) != NULL){
@@ -69,7 +69,7 @@ void IQR_command(char* buffer, char* awiString){
 	
 	fp = fopen("stats.txt", "a");
 	if(fp == NULL){
-		fprintf(stderr, "Erro ao abrir o ficheiro stats.txt\n");
+		fprintf(stderr, "Error opening stats.txt\n");
 		exit(EXIT_FAILURE);
 	}
 	buffer[strlen(buffer)] = '\0';
@@ -87,14 +87,10 @@ void IQR_command(char* buffer, char* awiString){
 }
 
 int main(int argc, char *argv[]){
-	int option = 0;
-	int ecpPort = ECP_PORT + GN;
-	
+	int option = 0, ecpPort = ECP_PORT + GN;
 	struct hostent *hostptr;
 	struct sockaddr_in serveraddr, clientaddr;
-	int fd, topicID;
-	int addrlen;
-	
+	int fd, addrlen, ret, topicID;
 	char buffer[BUFFER_SIZE], awtString[AWT_STRING], awtesString[AWT_STRING], awiString[AWT_STRING];
 	
 	while ((option = getopt(argc, argv, ":p")) != -1){
@@ -109,7 +105,7 @@ int main(int argc, char *argv[]){
 	
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd==-1){
-		fprintf(stderr, "Erro ao criar o socket UDP"); /*do we use errno?*/
+		fprintf(stderr, "Error creating UDP socket\n");
 		exit(EXIT_FAILURE);
 	}
 	
@@ -119,28 +115,52 @@ int main(int argc, char *argv[]){
 	serveraddr.sin_port = htons((u_short)ecpPort);
 	
 	bind(fd, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
-	
-	addrlen = sizeof(clientaddr);
+	if(ret==-1){
+		fprintf(stderr, "Error binding\n");
+		exit(EXIT_FAILURE);
+	}
 	
 	while(1){
-		recvfrom(fd, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientaddr, &addrlen);
+		addrlen = sizeof(clientaddr);
+		ret = recvfrom(fd, buffer, sizeof(buffer)+1, 0, (struct sockaddr*)&clientaddr, &addrlen);
+		if (ret==-1){
+			fprintf(stderr, "Error receiving user request\n");
+			exit(EXIT_FAILURE);
+		}
 		
 		if (strncmp(buffer, "TQR", 3) == 0){
 			TQR_command(awtString);
-			sendto(fd, awtString, strlen(awtString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+			ret = sendto(fd, awtString, strlen(awtString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+			if(ret==-1){
+				fprintf(stderr, "Error sending reply to user\n");
+				exit(EXIT_FAILURE);
+			}
 		}
 		else if (strncmp(buffer, "TER", 3) == 0){
 			topicID = buffer[TOPICID_INDEX];
 			TER_command(awtesString, topicID);
-			sendto(fd, awtesString, strlen(awtesString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+			ret = sendto(fd, awtesString, strlen(awtesString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+			if(ret==-1){
+				fprintf(stderr, "Error sending reply to user\n");
+				exit(EXIT_FAILURE);
+			}
 		}
 		else if(strncmp(buffer, "IQR", 3) == 0){
 			IQR_command(buffer, awiString);
-			sendto(fd, awiString, strlen(awiString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+			ret = sendto(fd, awiString, strlen(awiString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+			if(ret==-1){
+				fprintf(stderr, "Error sending reply to user\n");
+				exit(EXIT_FAILURE);
+			}		
 		}
 		else{
-			sendto(fd, "ERR\n", strlen("ERR\n")+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+			ret = sendto(fd, "ERR\n", strlen("ERR\n")+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+			if(ret==-1){
+				fprintf(stderr, "Error sending reply to user\n");
+				exit(EXIT_FAILURE);
+			}
 		}
+		memset(buffer, 0, strlen(buffer));
 	}
 	close(fd);
 	
