@@ -85,13 +85,13 @@ void IQR_command(char* buffer, char* awiString){
 	fclose(fp);
 }
 
-void printRequest(char* request, struct sockaddr* clientaddr){
+void printRequest(char* request, struct sockaddr_in* clientaddr){
 	char *clientIP;
 	int clientPort;
 	
 	clientIP = inet_ntoa(clientaddr->sin_addr);
 	clientPort = clientaddr->sin_port;
-	printf("%s\nIP: %d\nPort: %d\n", request, clientIP, clientPort);
+	printf("%s\nIP: %s\nPort: %d\n", request, clientIP, clientPort);
 }
 
 int main(int argc, char *argv[]){
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]){
 		buffer[strlen(buffer)] = '\0';
 		
 		if (strncmp(buffer, "TQR", 3) == 0){
-			printRequest(buffer, (struct sockaddr*)&clientaddr);
+			printRequest(buffer, &clientaddr);
 			TQR_command(awtString);
 			ret = sendto(fd, awtString, strlen(awtString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
 			if(ret==-1){
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]){
 			}
 		}
 		else if (strncmp(buffer, "TER", 3) == 0){
-			printRequest(buffer, (struct sockaddr*)&clientaddr);
+			printRequest(buffer, &clientaddr);
 			topicID = buffer[TOPICID_INDEX];
 			TER_command(awtesString, topicID);
 			ret = sendto(fd, awtesString, strlen(awtesString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
@@ -157,7 +157,7 @@ int main(int argc, char *argv[]){
 			}
 		}
 		else if(strncmp(buffer, "IQR", 3) == 0){
-			printRequest(buffer, (struct sockaddr*)&clientaddr);
+			printRequest(buffer, &clientaddr);
 			IQR_command(buffer, awiString);
 			ret = sendto(fd, awiString, strlen(awiString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
 			if(ret==-1){
@@ -166,7 +166,7 @@ int main(int argc, char *argv[]){
 			}		
 		}
 		else{
-			printRequest(buffer, (struct sockaddr*)&clientaddr);
+			printRequest(buffer, &clientaddr);
 			ret = sendto(fd, "ERR\n", strlen("ERR\n")+1, 0, (struct sockaddr*)&clientaddr, addrlen);
 			if(ret==-1){
 				fprintf(stderr, "Error sending reply to user\n");
