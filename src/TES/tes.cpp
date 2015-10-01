@@ -50,6 +50,7 @@ int main(int argc, char *argv[]) {
         MAY_FAIL(read_bytes(connection_socket, REQUEST_MAX_SIZE, request_buffer)); // RODRIGO: FIXME: Does not close sockets.
 
         /* PROCESS REQUEST */
+        printf("%s\n", request_buffer);
         const struct msg * const request = parse_request(request_buffer);
         const struct msg * const reply   = reply_request(&request);
 
