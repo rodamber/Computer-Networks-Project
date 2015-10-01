@@ -19,6 +19,7 @@
 #include <netdb.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <getopt.h>
 
 void TQR_command(char* awtString);
 void TER_command(char* awtesString, int topicID);
