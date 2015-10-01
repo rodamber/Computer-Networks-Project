@@ -41,8 +41,8 @@ int main(int argc, char **argv){
 
     /*usados no request*/
 
-    char* topic;
-    char* msg="";
+    char topic[30];
+    char msg[20]="";
 
     /*TCP*/
 
@@ -127,8 +127,6 @@ int main(int argc, char **argv){
     serveraddr_udp.sin_addr.s_addr=((struct in_addr *)(hostptr_udp->h_addr_list[0]))->s_addr;
     serveraddr_udp.sin_port=htons((u_short)(atoi(ecpport)));
     addrlen_udp=sizeof(serveraddr_udp);
-
-    printf("%d\n",atoi(ecpport));
         
     /* TCP TCP TCP TCP TCP TCP TCP TCP TCP TPC */
     /*Criar socket TCP*/
@@ -151,10 +149,11 @@ int main(int argc, char **argv){
             
             /* Recebe topicos do ECP por UDP */
   
-            recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
-            
-            
-           
+            n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
+            if(n1==-1){
+	        printf("error: %s\n",strerror(errno));
+                exit(1);
+            }
 
             /* parte string em string mais pequenas e preenche lista com strings */
             
@@ -185,14 +184,12 @@ int main(int argc, char **argv){
 
             /*imprime topicos de questinario*/            
 
-            indice=0;
-            while(indice<ntopics){
-                printf("%d- %s\n",indice,list[indice]);
+            indice=1;
+            while(indice<(ntopics+1)){
+                printf("%d- %s\n",indice,list[indice-1]);
                 indice++;
             }
-            break;
 
-            printf("%s\n",buffer_udp);
         }
             
         if (strcmp(command,"request")==0){
@@ -205,11 +202,12 @@ int main(int argc, char **argv){
 
             strcat(msg,"TER ");
             strcat(msg,topic);
-            sendto(udp,msg,strlen(msg)+1,0,(struct sockaddr*)&serveraddr_udp,addrlen_udp);
+            strcat(msg,"\n");
+            sendto(udp,msg,strlen(msg),0,(struct sockaddr*)&serveraddr_udp,addrlen_udp);
 
             /* recebe IP e Port do TES */
             
-            n1=recvfrom(udp,buffer_udp,1000,0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
+            n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
             if(n1==-1){
 	        printf("error: %s\n",strerror(errno));
                 exit(1);
@@ -224,11 +222,16 @@ int main(int argc, char **argv){
             if(strcmp(tqrreply,"AWTES")==0){
                 token1=strtok(NULL," ");
                 ip=token1;
+                printf("%s\n",ip);
                 token1=strtok(NULL," ");
-                tcpport=token1;    
+                tcpport=token1; 
+                printf ("%s\n",tcpport);  
             }
             else
                 printf("Error: Incorrect reply from ECP\n");
+
+
+            /* ATENCAO A PARTIR DAQUI DEVE DAR PORCARIA */
 
             /* parte TCP */
             
@@ -250,7 +253,7 @@ int main(int argc, char **argv){
             /* enviar RQT */ 
             
             flag=0;
-            break;
+            
         }
           
         if (strcmp(command,"submit")==0){
@@ -265,7 +268,7 @@ int main(int argc, char **argv){
 
 
             flag=0;
-            break;
+            
            
         }
 	
