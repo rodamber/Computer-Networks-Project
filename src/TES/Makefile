@@ -2,9 +2,9 @@ CXXFLAGS=-Wall -Wextra -pedantic -g
 CXX=g++
 
 EXEC=TES
-SOURCES=$(wildcard *.cpp)
-OBJECTS=$(SOURCES:.cpp=.o)
-HEADERS=$(SOURCES:.cpp=.hpp)
+SOURCES=$(wildcard *.c)
+OBJECTS=$(SOURCES:.c=.o)
+HEADERS=$(SOURCES:.c=.h)
 
 run: all
 	./$(EXEC)
@@ -16,7 +16,7 @@ $(EXEC): $(OBJECTS) utils.o
 
 -include $(OBJECTS:.o=.d)
 
-%.o: %.cpp
+%.o: %.c
 	$(CXX) -MMD -c $(CXXFLAGS) -o $@ $<
 
 clean:
