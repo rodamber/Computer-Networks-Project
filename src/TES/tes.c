@@ -1,104 +1,85 @@
-#include <arpa/inet.h>
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 #include "tes_utils.h"
 #include "../utils.h"
 
+#define IS_VALID_SID(X) 1
 
+struct msg * parse_rqt_request(const char * const request) {
+    struct msg * rqt = new_msg(request);
 
-int main(int argc, char *argv[]) {
-    int    TESport = 59000;
-    char * ECPname = "localhost";
-    int    ECPport = 58009;
-
-    /* Parse command line arguments */
-    int option;
-    while((option = getopt(argc, argv, "p:")) != -1) {
-        if(option == 'p') {
-            TESport = atoi(optarg);
-        } else if (option == 'n') {
-            ECPname = strdup(optarg);
-        } else if (option == 'e') {
-            ECPport = atoi(optarg);
-        } else if (optopt == '?'){
-            fprintf(stderr, "Usage: %s [-p TESport] [-n ECPname] [-e ECPport]\n", argv[0]);
-            return -1;
-        }
+    if (rqt->n_parameters != 1) {
+        return error_msg;
     }
 
-    /* Start TCP server */
-    const int server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_socket == -1) {
-        fprintf(stderr, "%s: Could not open server socket on TESport %d",
-                strerror(errno), TESport);
-        return -1;
+    /* Check SID. */
+    const char * SID = rqt->parameters[0];
+    if (!IS_VALID_SID(SID)) {
+        return error_msg;
     }
 
-    printf("Started TCP server on TESport %d\n", TESport);
+    return rqt;
+}
 
-    const struct sockaddr_in client_addr = {
-        .sin_family      = AF_INET,
-        .sin_port        = htons(TESport),
-        .sin_addr.s_addr = htonl(INADDR_ANY)
-    };
+struct msg * reply_rqs_request(const struct msg * const request) {
+    static unsigned long QID = 0;
 
-    MAY_FAIL(bind(server_socket, (struct sockaddr *) &client_addr, sizeof(client_addr)));
-    MAY_FAIL(listen(server_socket, 10));
-
-    while(1) {
-        int addr_size = sizeof(client_addr);
-        const int connection_socket =
-            accept(server_socket, (struct sockaddr *) &client_addr, (unsigned *) &addr_size);
-
-        if (connection_socket == -1) {
-            perror("Failed to accept connection");
-            continue;
-        }
-
-        printf("Accepted client with IP %s on TESport %d\n",
-               inet_ntoa(client_addr.sin_addr), TESport);
-
-        const pid_t pid = fork();
-        if (pid == -1) {
-            perror("Failed to fork");
-        } else if (pid == 0) { // Child process.
-            char request[REQUEST_MAX_SIZE];
-            const int bytes_read =
-                read_bytes(connection_socket, REQUEST_MAX_SIZE, request);
-
-            if (bytes_read == -1) {
-                perror("Failed to read from client");
-            } else {
-                request[bytes_read] = '\0';
-                printf("%s", request);
-
-                const struct msg  * const reply_msg = reply_request(request);
-
-                char * reply = msg_to_string(reply);
-                free(reply_msg);
-
-                const bytes_written = write_bytes(connection_socket, strlen(reply), reply);
-                free(reply);
-
-                if (bytes_written == -1) {
-                    perror("Failed to write to client");
-                }
-
-                close(connection_socket);
-            }
-        }
-        // Parent process.
+    /* Get quiz and its size. */
+    const int  qnumber  = random_in_range(1, 5);
+    const FILE *qstream = get_quiz(qnumber, "r");
+    if(qstream == NULL) {
+        return error_msg;
     }
+    const int  qsize    = get_qsize(qstream);
+    const char *qdata   = get_qdata(qstream);
 
-    // FIXME: Must finish cleanly and handle SIGPIPE and SIGINT!
-    close(server_socket);
-    if (strcmp(ECPname, "localhost") != 0) {
-        free(ECPname);
+    /* Get deadline. */
+          time_t now      = time(null);
+    const time_t deadline = now + QUIZ_SOLVING_INTERVAL * 3600;
+    // Submission is due in QUIZ_SOLVING_INTERVAL days.
+
+    /* Reply. */
+    const char months[13][4] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+                                "JUL","AGO", "SEP", "OCT", "NOV", "DEC"};
+    char * reply;
+    asprintf(&reply, "%s %d %d%s%d_%d:%d:%d %d %s",
+             "AWT",
+             QID++,
+             tm.tm_mday,
+             months[tm.tm_mon],
+             tm.tm_year + 1900,
+             tm.tm_hour,
+             tm.tm_min,
+             tm.tm_sec);
+    const struct msg * awt = new_msg(reply);
+    free(reply);
+
+    /* Save the transaction somewhere */
+    save();
+
+    return awt;
+
+}
+
+struct msg * parse_rqs_request(const char * const request) {
+    struct msg * rqs = new_msg(request);
+    return error_msg;
+}
+
+
+struct msg * parse_request(const char * const request) {
+    if (strncmp(request, "RQT", REQUEST_TYPE_SIZE) == 0) {
+        return parse_rqt_request(request);
+    } else if (strncmp(request, "RQS", REQUEST_TYPE_SIZE) == 0) {
+        return parse_rqs_request(request);
+    } else {
+        return error_msg;
     }
-    return 0;
+}
+
+struct msg * reply_request(const struct msg * const request) {
+    return error_msg;
 }
