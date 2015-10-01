@@ -1,5 +1,4 @@
 #include "ecp_utils.h"
-#include <getopt.h>
 
 void TQR_command(char* awtString){
 	FILE *fp;
@@ -149,7 +148,7 @@ int main(int argc, char *argv[]){
 		}
 		else if (strncmp(buffer, "TER", 3) == 0){
 			printRequest(buffer, &clientaddr);
-			topicID = buffer[TOPICID_INDEX];
+			topicID = buffer[TOPICID_INDEX]-'0';
 			TER_command(awtesString, topicID);
 			ret = sendto(fd, awtesString, strlen(awtesString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
 			if(ret==-1){
