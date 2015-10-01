@@ -1,5 +1,5 @@
-CXXFLAGS=-Wall -Wextra -pedantic -g
-CXX=g++
+CCFLAGS=-Wall -Wextra -pedantic -g
+CC=gcc
 
 EXEC=TES
 SOURCES=$(wildcard *.c)
@@ -12,12 +12,12 @@ run: all
 all: $(EXEC)
 
 $(EXEC): $(OBJECTS) utils.o
-	$(CXX) $(CXXFLAGS) $(OBJECTS) utils.o -o $(EXEC)
+	$(CC) $(CCFLAGS) $(OBJECTS) utils.o -o $(EXEC)
 
 -include $(OBJECTS:.o=.d)
 
 %.o: %.c
-	$(CXX) -MMD -c $(CXXFLAGS) -o $@ $<
+	$(CC) -MMD -c $(CCFLAGS) -o $@ $<
 
 clean:
 	rm -f $(EXEC) $(OBJECTS)
