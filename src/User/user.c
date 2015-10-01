@@ -16,11 +16,11 @@ extern int errno;     /*erro*/
 
 int main(int argc, char **argv){
 
-    char* sid;   /*SID*/
-    char* ecpname;   /*ECPname*/
-    char* ecpport;   /*ECPport*/
+    char sid[10];   /*SID*/
+    char ecpname[128];   /*ECPname*/
+    char ecpport[10];   /*ECPport*/
 
-    char* command; /*comando do programa*/
+    char command[30]; /*comando do programa*/
     int flag; /*permite saber se o comando é correto*/
 
     /*UDP*/
@@ -31,7 +31,7 @@ int main(int argc, char **argv){
 
     /*usados no list*/
 
-    char buffer_udp[1000];
+    char buffer_udp[500];
     int n1;
     char* list[99];
     int ntopics;
@@ -39,16 +39,24 @@ int main(int argc, char **argv){
     char* token1;
     int indice;
 
+    /*usados no request*/
+
+    char topic[30];
+    char msg[20]="";
+
     /*TCP*/
 
- 
-
+    int tcp;
+    struct hostent *hostptr_tcp;
+    struct sockaddr_in serveraddr_tcp;
+    char* ip;
+    char* tcpport;
 
     /* Verificação de introdução de input */
 
     if(argc>=2){
         if((strlen(argv[1])/sizeof(char))==5){
-            sid=argv[1];
+            strcpy(sid,argv[1]);
         }
         else{
             printf("error: sid must have 5 digits\n");
@@ -59,6 +67,7 @@ int main(int argc, char **argv){
                 printf("error: %s\n",strerror(errno));
                 exit(1);
             }
+            strcpy(ecpport,"58000");
         }
         if(argc==3){
             printf("error: insert ECPname\n");
@@ -66,13 +75,14 @@ int main(int argc, char **argv){
         }
         if(argc>=4){
             if(strcmp(argv[2],"-n")==0)
-                ecpname=argv[3];
+                strcpy(ecpname,argv[3]);
             else{
                 printf("error: -n not inserted\n");
                 return 0;
             }
             if(argc==4){
              /*buscar ECPport que sera 58000 + GN (group number)*/
+                strcpy(ecpport,"58000");
             }
 	    if(argc==5){
                 printf("error: insert ECPport\n");
@@ -80,7 +90,7 @@ int main(int argc, char **argv){
             }
             if(argc==6){
                 if(strcmp(argv[4],"-p")==0)
-                    ecpport=argv[5];
+                    strcpy(ecpport,argv[5]);
                 else{
                     printf("error: -p not inserted\n");
                     return 0;
@@ -92,6 +102,7 @@ int main(int argc, char **argv){
         printf("error: insert sid\n");
         return 0;
     }
+
 
     /* UDP UDP UDP UDP UDP UDP UDP UDP UDP UDP */
     /*Criar socket UDP*/
@@ -133,11 +144,12 @@ int main(int argc, char **argv){
 
             /* Envia TQR para o ECP atraves do socket UDP */
 
-            sendto(udp,"TQR\n",strlen("TQR\n")+1,0,(struct sockaddr*)&serveraddr_udp,addrlen_udp);
+
+            sendto(udp,"TQR\n",strlen("TQR\n"),0,(struct sockaddr*)&serveraddr_udp,addrlen_udp);
             
             /* Recebe topicos do ECP por UDP */
   
-            n1=recvfrom(udp,buffer_udp,1000,0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
+            n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
             if(n1==-1){
 	        printf("error: %s\n",strerror(errno));
                 exit(1);
@@ -162,32 +174,101 @@ int main(int argc, char **argv){
                     token1=strtok(NULL," ");
                     indice++;
                 }
+                if(indice!=ntopics){
+                    printf("Error: Number of topics received is incorrect\n");
+                    exit(1);
+                }
             }
             else
                 printf("Error: Incorrect reply from ECP\n");
 
             /*imprime topicos de questinario*/            
 
-            indice=0;
-            while(indice<ntopics){
-                printf("%d- %s\n",indice,list[indice]);
+            indice=1;
+            while(indice<(ntopics+1)){
+                printf("%d- %s\n",indice,list[indice-1]);
                 indice++;
             }
+
         }
             
         if (strcmp(command,"request")==0){
 
-            /* Chama a funcao responsavel pela execucao do comando request */
+            /* le numero do topico */
+
+            scanf("%s",topic);
+
+            /* pede ao TES detalhes do seu endereco por UDP */
+
+            strcat(msg,"TER ");
+            strcat(msg,topic);
+            strcat(msg,"\n");
+            sendto(udp,msg,strlen(msg),0,(struct sockaddr*)&serveraddr_udp,addrlen_udp);
+
+            /* recebe IP e Port do TES */
             
+            n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
+            if(n1==-1){
+	        printf("error: %s\n",strerror(errno));
+                exit(1);
+            }
+            token1=strtok(buffer_udp," ");
+            tqrreply=token1;
+
+            if(strcmp(tqrreply,"EOF")==0)
+                printf("Error: Reply not sent by ECP\n");
+            if(strcmp(tqrreply,"ERR")==0)
+                printf("Error: TER not correctly formulated\n");
+            if(strcmp(tqrreply,"AWTES")==0){
+                token1=strtok(NULL," ");
+                ip=token1;
+                printf("%s\n",ip);
+                token1=strtok(NULL," ");
+                tcpport=token1; 
+                printf ("%s\n",tcpport);  
+            }
+            else
+                printf("Error: Incorrect reply from ECP\n");
+
+
+            /* ATENCAO A PARTIR DAQUI DEVE DAR PORCARIA */
+
+            /* parte TCP */
+            
+            /* criar socket TCP */
+
+            tcp=socket(AF_INET,SOCK_STREAM,0);
+
+            hostptr_tcp=gethostbyname(ip);
+            
+            memset((void*)&serveraddr_tcp,(int)'\0',sizeof(serveraddr_tcp));
+            serveraddr_tcp.sin_family=AF_INET;
+            serveraddr_tcp.sin_addr.s_addr=((struct in_addr *)(hostptr_tcp->h_addr_list[0]))->s_addr;
+            serveraddr_tcp.sin_port=htons((u_short)(atoi(tcpport)));
+            
+            /* conexao TCP */
+
+            connect(tcp,(struct sockaddr*)&serveraddr_tcp,sizeof(serveraddr_tcp));
+
+            /* enviar RQT */ 
             
             flag=0;
+            
         }
           
         if (strcmp(command,"submit")==0){
 
             /* Chama a funcao responsavel pela execucao do comando submit */
 
+            
+
+
+
+
+
+
             flag=0;
+            
            
         }
 	
@@ -200,9 +281,7 @@ int main(int argc, char **argv){
     }while(strcmp(command,"exit")!=0);
 
     close(udp);
-
-
-
+    close(tcp);
 
     return 0;
 }

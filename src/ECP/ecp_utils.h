@@ -18,9 +18,11 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <string.h>
+#include <arpa/inet.h>
 
 void TQR_command(char* awtString);
 void TER_command(char* awtesString, int topicID);
 void IQR_command(char* buffer, char* awiString);
+void printRequest(char* request, struct sockaddr_in* clientaddr);
 
 #endif // __ECP_UTILS_H__

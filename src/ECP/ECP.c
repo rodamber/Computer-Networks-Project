@@ -1,4 +1,5 @@
 #include "ecp_utils.h"
+#include <getopt.h>
 
 void TQR_command(char* awtString){
 	FILE *fp;
@@ -64,7 +65,7 @@ void TER_command(char* awtesString, int topicID){
 
 void IQR_command(char* buffer, char* awiString){
 	FILE* fp;
-	char* substr;
+	char* substr = NULL;
 	char *pch;
 	
 	fp = fopen("stats.txt", "a");
@@ -72,8 +73,7 @@ void IQR_command(char* buffer, char* awiString){
 		fprintf(stderr, "Error opening stats.txt\n");
 		exit(EXIT_FAILURE);
 	}
-	buffer[strlen(buffer)] = '\0';
-	strncpy(substr, buffer+4, strlen(buffer)-3);
+	strncpy(substr, buffer+4, strlen(buffer)-3); // FIXME: -3 ou -4?
 	fprintf(fp, "%s", substr);
 	
 	strcpy(awiString, "AWI ");
@@ -86,11 +86,20 @@ void IQR_command(char* buffer, char* awiString){
 	fclose(fp);
 }
 
+void printRequest(char* request, struct sockaddr_in* clientaddr){
+	char *clientIP;
+	int clientPort;
+	
+	clientIP = inet_ntoa(clientaddr->sin_addr);
+	clientPort = clientaddr->sin_port;
+	printf("%sIP: %s\nPort: %d\n", request, clientIP, clientPort);
+}
+
 int main(int argc, char *argv[]){
 	int option = 0, ecpPort = ECP_PORT + GN;
-	struct hostent *hostptr;
+	//struct hostent *hostptr;
 	struct sockaddr_in serveraddr, clientaddr;
-	int fd, addrlen, ret, topicID;
+	int fd, addrlen, ret, topicID, nread;
 	char buffer[BUFFER_SIZE], awtString[AWT_STRING], awtesString[AWT_STRING], awiString[AWT_STRING];
 	
 	while ((option = getopt(argc, argv, ":p")) != -1){
@@ -112,9 +121,9 @@ int main(int argc, char *argv[]){
 	memset((void*)&serveraddr, (int)'\0', sizeof(serveraddr));
 	serveraddr.sin_family = AF_INET;
 	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serveraddr.sin_port = htons((u_short)ecpPort);
+	serveraddr.sin_port = htons((unsigned short)ecpPort);
 	
-	bind(fd, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+	ret = bind(fd, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
 	if(ret==-1){
 		fprintf(stderr, "Error binding\n");
 		exit(EXIT_FAILURE);
@@ -122,13 +131,15 @@ int main(int argc, char *argv[]){
 	
 	while(1){
 		addrlen = sizeof(clientaddr);
-		ret = recvfrom(fd, buffer, sizeof(buffer)+1, 0, (struct sockaddr*)&clientaddr, &addrlen);
-		if (ret==-1){
+		nread = recvfrom(fd, buffer, sizeof(buffer)+1, 0, (struct sockaddr*)&clientaddr, (unsigned*)&addrlen);
+		if (nread==-1){
 			fprintf(stderr, "Error receiving user request\n");
 			exit(EXIT_FAILURE);
 		}
+		buffer[nread] = '\0';
 		
 		if (strncmp(buffer, "TQR", 3) == 0){
+			printRequest(buffer, &clientaddr);
 			TQR_command(awtString);
 			ret = sendto(fd, awtString, strlen(awtString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
 			if(ret==-1){
@@ -137,6 +148,7 @@ int main(int argc, char *argv[]){
 			}
 		}
 		else if (strncmp(buffer, "TER", 3) == 0){
+			printRequest(buffer, &clientaddr);
 			topicID = buffer[TOPICID_INDEX];
 			TER_command(awtesString, topicID);
 			ret = sendto(fd, awtesString, strlen(awtesString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
@@ -146,6 +158,7 @@ int main(int argc, char *argv[]){
 			}
 		}
 		else if(strncmp(buffer, "IQR", 3) == 0){
+			printRequest(buffer, &clientaddr);
 			IQR_command(buffer, awiString);
 			ret = sendto(fd, awiString, strlen(awiString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
 			if(ret==-1){
@@ -154,6 +167,7 @@ int main(int argc, char *argv[]){
 			}		
 		}
 		else{
+			printRequest(buffer, &clientaddr);
 			ret = sendto(fd, "ERR\n", strlen("ERR\n")+1, 0, (struct sockaddr*)&clientaddr, addrlen);
 			if(ret==-1){
 				fprintf(stderr, "Error sending reply to user\n");
