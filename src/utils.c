@@ -24,7 +24,15 @@ int read_bytes(const int fd, const unsigned nbytes, char * buf) {
     return bytes_read;
 }
 
-const struct msg error_msg = { .type = "ERR" };
+char *strupr(char *str) {
+    char c; int i;
+    for (c = str[0], i = 0; c; c = str[++i]) {
+        str[i] = toupper(str[i]);
+    }
+    return str;
+}
+
+const struct msg error_msg = { .type = "ERR\n" };
 
 struct msg * new_msg(const char * const str) {
     struct msg * m = msgdup(&error_msg);
@@ -72,7 +80,6 @@ char * msg_to_string(const struct msg * const m) {
 
     // The length of the buffer is tracked to make the algorithm run in linear time.
     int len = 0;
-
 
     // Concatenate message type and then concatenate all its parameters, one by
     // one, space separated.
