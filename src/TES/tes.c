@@ -1,6 +1,8 @@
 #include <arpa/inet.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -10,75 +12,93 @@
 
 
 int main(int argc, char *argv[]) {
-    int port = PORT; // Server port;
+    int    TESport = 59000;
+    char * ECPname = "localhost";
+    int    ECPport = 58009;
 
     /* Parse command line arguments */
     int option;
     while((option = getopt(argc, argv, "p:")) != -1) {
         if(option == 'p') {
-            port = atoi(optarg);
-        } else if (optopt == 'p'){
-            fprintf(stderr, "Usage: %s [-p TESPORT]\n", argv[0]);
-            return EXIT_FAILURE;
+            TESport = atoi(optarg);
+        } else if (option == 'n') {
+            ECPname = strdup(optarg);
+        } else if (option == 'e') {
+            ECPport = atoi(optarg);
+        } else if (optopt == '?'){
+            fprintf(stderr, "Usage: %s [-p TESport] [-n ECPname] [-e ECPport]\n", argv[0]);
+            return -1;
         }
     }
 
-    /* TEST: Command line arguments parse */
-    printf("The port is %d.\n", port);
-
     /* Start TCP server */
     const int server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    MAY_FAIL(server_socket);
+    if (server_socket == -1) {
+        fprintf(stderr, "%s: Could not open server socket on TESport %d",
+                strerror(errno), TESport);
+        return -1;
+    }
+
+    printf("Started TCP server on TESport %d\n", TESport);
 
     const struct sockaddr_in client_addr = {
         .sin_family      = AF_INET,
-        .sin_port        = htons(port),
+        .sin_port        = htons(TESport),
         .sin_addr.s_addr = htonl(INADDR_ANY)
     };
 
     MAY_FAIL(bind(server_socket, (struct sockaddr *) &client_addr, sizeof(client_addr)));
-    MAY_FAIL(listen(server_socket, 5));
+    MAY_FAIL(listen(server_socket, 10));
 
     while(1) {
         int addr_size = sizeof(client_addr);
         const int connection_socket =
             accept(server_socket, (struct sockaddr *) &client_addr, (unsigned *) &addr_size);
-        MAY_FAIL(connection_socket);
 
-        /* GET REQUEST */
-        char request_buffer[REQUEST_MAX_SIZE];
-        MAY_FAIL(read_bytes(connection_socket, REQUEST_MAX_SIZE, request_buffer)); // RODRIGO: FIXME: Does not close sockets.
+        if (connection_socket == -1) {
+            perror("Failed to accept connection");
+            continue;
+        }
 
-        /* PROCESS REQUEST */
-        printf("%s\n", request_buffer);
-        const struct msg * const request = parse_request(request_buffer);
-        const struct msg * const reply   = reply_request(&request);
+        printf("Accepted client with IP %s on TESport %d\n",
+               inet_ntoa(client_addr.sin_addr), TESport);
 
-        // FIXME: Don't forget to free things
-        close(connection_socket);
+        const pid_t pid = fork();
+        if (pid == -1) {
+            perror("Failed to fork");
+        } else if (pid == 0) { // Child process.
+            char request[REQUEST_MAX_SIZE];
+            const int bytes_read =
+                read_bytes(connection_socket, REQUEST_MAX_SIZE, request);
+
+            if (bytes_read == -1) {
+                perror("Failed to read from client");
+            } else {
+                request[bytes_read] = '\0';
+                printf("%s", request);
+
+                const struct msg  * const reply_msg = reply_request(request);
+
+                char * reply = msg_to_string(reply);
+                free(reply_msg);
+
+                const bytes_written = write_bytes(connection_socket, strlen(reply), reply);
+                free(reply);
+
+                if (bytes_written == -1) {
+                    perror("Failed to write to client");
+                }
+
+                close(connection_socket);
+            }
+        }
+        // Parent process.
     }
 
+    // FIXME: Must finish cleanly and handle SIGPIPE and SIGINT!
     close(server_socket);
-    return EXIT_SUCCESS;
+    if (strcmp(ECPname, "localhost") != 0) {
+        free(ECPname);
+    }
+    return 0;
 }
-
-
-/* int bytes_read; */
-/* char buffer[BUFFER_SIZE]; */
-
-/* while((bytes_read = read(connection_socket, buffer, BUFFER_SIZE)) != 0) { */
-/*     MAY_FAIL(bytes_read); */
-/*     buffer[bytes_read] = 0; */
-
-/*     printf("Client: %s\n", buffer); */
-/*     strn_toupper(buffer, bytes_read); */
-
-/*     char *ptr = buffer; */
-/*     while(bytes_read > 0) { */
-/*         int bytes_written; */
-/*         MAY_FAIL(bytes_written = write(connection_socket, ptr, bytes_read)); */
-/*         bytes_read -= bytes_written; */
-/*         ptr        += bytes_written; */
-/*     } */
-/*     printf("Server: %s\n", buffer); */
-/* } */
