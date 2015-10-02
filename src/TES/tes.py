@@ -83,7 +83,7 @@ def handle(request):
 
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", help = """TESport is the well-known port where the
                                      TES server accepts user requests, in TCP.
@@ -123,16 +123,10 @@ if __name__ == '__main__':
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
             server.setblocking(True)
-            print("Opened TCP server")
+            server.bind(('', TESport))
+            server.listen(5)
 
-            try:
-                server.bind(('', TESport))
-                server.listen(5)
-            except Exception as e:
-                print("Failed to bind to port {}: {}".format(TESport, str(e)))
-                sys.exit(1)
-
-            print("Bound server to port {}".format(TESport))
+            print("Bound server on port {}".format(TESport))
 
             while True:
                 try:
@@ -164,3 +158,6 @@ if __name__ == '__main__':
 
     except Exception as e:
         print("Failed to open server socket on port {}: {}".format(TESport, str(e)))
+
+if __name__ == '__main__':
+    main()
