@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import argparse
+import fcntl
 import os
 import random
 import signal
@@ -56,20 +57,25 @@ def handle(request):
 
         print("Saving transaction...")
 
-        # FIXME: Lock file!
         with open("transactions.txt", 'a') as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
             f.write(sid + ' ' + qid + '\n')
+            fcntl.flock(f, fcntl.LOCK_EX)
 
         print("Choosing file...")
 
-        quiz = random.choice([f for f in os.listdir('.') if f.endswith(".pdf")])
-        size = os.stat(quiz).st_size
+        size = 0
+        while (size == 0):
+            quiz = random.choice([f for f in os.listdir('.') if f.endswith(".pdf")])
+            size = os.stat(quiz).st_size
 
         print("Sending file...")
 
         with open(quiz, 'r', encoding = "latin-1") as q:
-            # FIXME: Eu acho que isto nao esta a converter o ficheiro para string...
-            return "AQT " + str(qid) + deadline + str(size) + str(q) + '\n'
+            return "AQT " + str(qid)  + ' ' \
+                          + deadline  + ' ' \
+                          + str(size) + ' ' \
+                          + ''.join(list(q)) + '\n'
 
     def handle_rqs(request):
         return error
