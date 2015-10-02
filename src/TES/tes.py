@@ -2,9 +2,9 @@
 
 import argparse
 import fcntl
+import math
 import os
 import random
-import signal
 import socket
 import sys
 import time
@@ -23,11 +23,9 @@ def valid_port(p):
 def valid_sid(sid):
     return sid.isdigit() and len(sid) == 5
 
-
-def sigint_handler(signal, frame):
-    sys.exit(1)
-
-signal.signal(signal.SIGINT, sigint_handler)
+def date():
+    m = int(time.strftime("%m")) - 1 # Because lists are 0-indexed.
+    clock = time.strftime("%d") + months[m] + time.strftime("%Y_%H:%M:%S")
 
 
 def handle(request):
@@ -38,7 +36,7 @@ def handle(request):
         params = request.split()
 
         if len(params) != 2:
-            print("error: Bad request")
+            print("Error: Bad request")
             return error
 
         print("Checking SID...")
@@ -50,17 +48,7 @@ def handle(request):
 
         print("Creating QID...")
 
-        m = int(time.strftime("%m")) - 1 # Because lists are 0-indexed.
-        clock = time.strftime("%d") + months[m] + time.strftime("%Y_%H:%M:%S")
-
-        qid = sid + '_' + clock
-
-        print("Saving transaction...")
-
-        with open("transactions.txt", 'a') as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
-            f.write(sid + ' ' + qid + '\n')
-            fcntl.flock(f, fcntl.LOCK_EX)
+        qid = sid + '_' + date()
 
         print("Choosing file...")
 
@@ -68,6 +56,13 @@ def handle(request):
         while (size == 0):
             quiz = random.choice([f for f in os.listdir('.') if f.endswith(".pdf")])
             size = os.stat(quiz).st_size
+
+        print("Saving transaction...")
+
+        with open("transactions.txt", 'a') as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            f.write(sid + ' ' + qid + ' ' + quiz + '\n')
+            fcntl.flock(f, fcntl.LOCK_EX)
 
         print("Sending file...")
 
@@ -78,7 +73,72 @@ def handle(request):
                           + ''.join(list(q)) + '\n'
 
     def handle_rqs(request):
-        return error
+
+        def check_parameters_of(request):
+            params = request.split()
+            params_number = len(params)
+
+            if params_number != 8:
+                raise ValueError("Error: Number of parameters should be 8 not {}".format(params_number))
+
+            sid     = params[1]
+            qid     = params[2]
+            answers = list(params[3:])
+
+            return (sid, qid, answers)
+
+        def check_pair(sid, qid):
+            with open("transactions.txt", 'r') as f:
+                for line in f.readlines():
+                    trio = line[:-1].split() # Remove newline and then split.
+                    # trio is a list composed of SID, QID and quiz name.
+                    if sid == trio[0] and qid == trio[1]:
+                        return (True, trio[2])
+            return (False, "")
+
+        def check_answers(answers, quiz, deadline):
+            quizno = int(quiz[5:8])
+            correct_answers = ""
+
+            def predicate(f):
+                return f.startswith('T')  and f.endswith('.txt') and int(f[5:8]) == quizno
+
+            answers_file = list(filter(predicate, os.listdir('.')))
+
+            with open(answers_file, 'r') as f:
+                lines = f.readlines()
+                number_of_questions = len(lines)
+                correct_answers = list(map(str.strip, lines))
+
+            points = 0
+            for answer, correct in zip(answers, correct_answers):
+                if answer == correct:
+                    points += 1
+                elif answer == 'N':
+                    pass
+                else:
+                    points -= 0.5
+
+            # FIXME: Score should be -1 if answers submited after deadline
+            return math.ceil(100 * points / number_of_questions)
+
+        print("Handling RQS request...")
+        sid, qid, answers = check_parameters_of(request)
+
+        print("Checking pair SID-QID...")
+        checked, quiz = check_pair(sid, qid)
+
+        if checked == False:
+            print("Error: SID and QID do not match")
+            return "-2\n"
+
+        print("Checking answers...")
+        score = str(check_answers(answers, deadline)) + '%'
+        print("Scored " + score)
+
+        #FIXME: Send things to ECP before returning
+
+        return score
 
     if request[:3] == "RQT":
         return handle_rqt(request)
@@ -89,7 +149,7 @@ def handle(request):
 
 
 
-def main():
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", help = """TESport is the well-known port where the
                                      TES server accepts user requests, in TCP.
@@ -164,6 +224,3 @@ def main():
 
     except Exception as e:
         print("Failed to open server socket on port {}: {}".format(TESport, str(e)))
-
-if __name__ == '__main__':
-    main()
