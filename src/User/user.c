@@ -195,11 +195,10 @@ int main(int argc, char **argv){
         if (strcmp(command,"request")==0){
 
             /* le numero do topico */
-
+            memset(msg,0,strlen(msg));
             scanf("%s",topic);
 
             /* pede ao TES detalhes do seu endereco por UDP */
-
             strcat(msg,"TER ");
             strcat(msg,topic);
             strcat(msg,"\n");
@@ -209,7 +208,7 @@ int main(int argc, char **argv){
             
             n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
             if(n1==-1){
-	        printf("error: %s\n",strerror(errno));
+	          printf("error: %s\n",strerror(errno));
                 exit(1);
             }
             token1=strtok(buffer_udp," ");
