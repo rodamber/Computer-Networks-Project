@@ -101,7 +101,7 @@ int main(int argc, char *argv[]){
 	int fd, addrlen, ret, topicID, nread;
 	char buffer[BUFFER_SIZE], awtString[AWT_STRING], awtesString[AWT_STRING], awiString[AWT_STRING];
 	
-	while ((option = getopt(argc, argv, ":p")) != -1){
+	while ((option = getopt(argc, argv, "p:")) != -1){
 		switch (option){
 			case 'p': 
 				ecpPort = atoi (optarg);
