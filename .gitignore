@@ -4,3 +4,5 @@ src/TES/TES
 src/User/user
 *.o
 *.d
+__pycache__
+transactions.txt
