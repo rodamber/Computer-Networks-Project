@@ -3,7 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "tes_utils.h"
+#include "tes.h"
 #include "../utils.h"
 
 #define IS_VALID_SID(X) 1

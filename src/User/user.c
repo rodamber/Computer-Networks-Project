@@ -45,6 +45,7 @@ int main(int argc, char **argv){
     /*usados no request*/
 
     char topic[30];
+<<<<<<< HEAD
     char msg[30]="";
     char qid[30];
     char answers[5][5];
@@ -71,6 +72,9 @@ int main(int argc, char **argv){
     ssize_t n_bytes_written; 
     int close_success;
     int iteracoes;
+=======
+    char msg[20]="";
+>>>>>>> bed8df55a36eb5830fa1fa7284b44801b9f64298
 
     /*TCP*/
 
@@ -155,6 +159,14 @@ int main(int argc, char **argv){
     serveraddr_udp.sin_addr.s_addr=((struct in_addr *)(hostptr_udp->h_addr_list[0]))->s_addr;
     serveraddr_udp.sin_port=htons((u_short)(atoi(ecpport)));
     addrlen_udp=sizeof(serveraddr_udp);
+<<<<<<< HEAD
+=======
+        
+    /* TCP TCP TCP TCP TCP TCP TCP TCP TCP TPC */
+    /*Criar socket TCP*/
+    
+
+>>>>>>> bed8df55a36eb5830fa1fa7284b44801b9f64298
 
     /*Comandos do programa*/
     
@@ -218,12 +230,15 @@ int main(int argc, char **argv){
         if (strcmp(command,"request")==0){
 
             /* le numero do topico */
-
+            memset(msg,0,strlen(msg));
             scanf("%s",topic);
 
             /* pede ao TES detalhes do seu endereco por UDP */
+<<<<<<< HEAD
 
             strcpy(msg,"");
+=======
+>>>>>>> bed8df55a36eb5830fa1fa7284b44801b9f64298
             strcat(msg,"TER ");
             strcat(msg,topic);
             strcat(msg,"\n");
@@ -233,7 +248,7 @@ int main(int argc, char **argv){
             
             n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
             if(n1==-1){
-	        printf("error: %s\n",strerror(errno));
+	          printf("error: %s\n",strerror(errno));
                 exit(1);
             }
             token1=strtok(buffer_udp," ");
@@ -245,14 +260,29 @@ int main(int argc, char **argv){
                 printf("Error: TER not correctly formulated\n");
             if(strcmp(tqrreply,"AWTES")==0){
                 token1=strtok(NULL," ");
+<<<<<<< HEAD
                 strcpy(ip,token1);
                 printf("%s\n",ip);
                 token1=strtok(NULL," ");
                 strcpy(tcpport,token1); 
+=======
+                ip=token1;
+                printf("%s\n",ip);
+                token1=strtok(NULL," ");
+                tcpport=token1; 
+>>>>>>> bed8df55a36eb5830fa1fa7284b44801b9f64298
                 printf ("%s\n",tcpport);  
             }
             else
                 printf("Error: Incorrect reply from ECP\n");
+<<<<<<< HEAD
+=======
+
+
+            /* ATENCAO A PARTIR DAQUI DEVE DAR PORCARIA */
+
+            /* parte TCP */
+>>>>>>> bed8df55a36eb5830fa1fa7284b44801b9f64298
             
             /* criar socket TCP */
 
@@ -320,6 +350,7 @@ int main(int argc, char **argv){
                 exit(1);
             }
             
+<<<<<<< HEAD
 
             n1=0;
             while(qid_prov[0]!=' '){
@@ -417,6 +448,11 @@ int main(int argc, char **argv){
 
             flag=0;    
         } 
+=======
+            flag=0;
+            
+        }
+>>>>>>> bed8df55a36eb5830fa1fa7284b44801b9f64298
           
         if (strcmp(command,"submit")==0){
 
@@ -513,7 +549,12 @@ int main(int argc, char **argv){
             printf("Obtained score: %s\n",score);
 
             flag=0;
+<<<<<<< HEAD
                      
+=======
+            
+           
+>>>>>>> bed8df55a36eb5830fa1fa7284b44801b9f64298
         }
 	
 	if (strcmp(command,"exit")==0)

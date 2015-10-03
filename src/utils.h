@@ -30,6 +30,15 @@ int fail(const char * const msg);
 // the error.
 int read_bytes(const int fd, const unsigned nbytes, char * buf);
 
+// Converts a string to uppercase
+char *strupr(char *str);
+
+// Generates a pseudo-random integer in the *closed* range specified.
+int random_in_range(int l, int r);
+
+// Get's a file size.
+off_t fsize(const char *fname);
+
 // Basic representation of a client-server request/reply.
 struct msg {
     char * type;

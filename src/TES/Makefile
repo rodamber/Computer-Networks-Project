@@ -1,26 +1,12 @@
-CXXFLAGS=-Wall -Wextra -pedantic -g
-CXX=g++
-
 EXEC=TES
-SOURCES=$(wildcard *.cpp)
-OBJECTS=$(SOURCES:.cpp=.o)
-HEADERS=$(SOURCES:.cpp=.hpp)
-
-run: all
-	./$(EXEC)
 
 all: $(EXEC)
 
-$(EXEC): $(OBJECTS) utils.o
-	$(CXX) $(CXXFLAGS) $(OBJECTS) utils.o -o $(EXEC)
-
--include $(OBJECTS:.o=.d)
-
-%.o: %.cpp
-	$(CXX) -MMD -c $(CXXFLAGS) -o $@ $<
+$(EXEC): *.py
+	zip -r $(EXEC).zip $^
+	echo '#!/usr/bin/env python3' | cat - $(EXEC).zip > $(EXEC)
+	rm $(EXEC).zip
+	chmod +x $(EXEC)
 
 clean:
-	rm -f $(EXEC) $(OBJECTS)
-
-cleand:
-	rm -f *.d
+	rm -f $(EXEC)
