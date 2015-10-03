@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import argparse
+import contextlib
 import fcntl
 import math
 import os
@@ -10,146 +11,189 @@ import sys
 import time
 
 
+@contextlib.contextmanager
+def accept(sock):
+    client, address = sock.accept()
+    yield client, address
+    client.close()
 
-months   = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"]
-deadline = "09OUT2015_20:00:00"
-error    = "ERR\n"
+
+months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
+error  = bytes('ERR\n', 'utf-8')
 
 
 def valid_port(p):
     return 1024 <= p <= 65535
-
 
 def valid_sid(sid):
     return sid.isdigit() and len(sid) == 5
 
 def date():
     m = int(time.strftime("%m")) - 1 # Because lists are 0-indexed.
-    clock = time.strftime("%d") + months[m] + time.strftime("%Y_%H:%M:%S")
+    return time.strftime("%d") + months[m] + time.strftime("%Y_%H:%M:%S")
 
+def startup():
+    with open('startup.txt', 'r') as f:
+        topic_name, deadline = f.read().strip().split()
+        return (topic_name, deadline)
+    return ('', '')
 
-def handle(request):
+def handle_rqt(request):
+    print("Handling RQT request...")
 
-    def handle_rqt(request):
-        print("Handling RQT request...")
+    params = request.split()
+    params_number = len(params)
 
+    if  params_number != 2:
+        print("Error: Bad request")
+        return error
+
+    print("Checking SID...")
+
+    sid = params[1]
+    if not valid_sid(sid):
+        print("Bad request")
+        return error
+
+    print("Creating QID...")
+
+    qid = sid + '_' + date()
+
+    print("Choosing file...")
+
+    size = 0
+    while (size == 0):
+        quiz = random.choice([f for f in os.listdir('.') if f.endswith(".pdf")])
+        size = os.stat(quiz).st_size
+
+    print("Saving transaction...")
+
+    with open("transactions.txt", 'a') as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        f.write(sid + ' ' + qid + ' ' + quiz + '\n')
+        fcntl.flock(f, fcntl.LOCK_EX)
+
+    print("Sending file...")
+
+    with open(quiz, 'rb') as q:
+        return bytes("AQT " + str(qid)  + ' '           \
+                            + deadline  + ' '           \
+                            + str(size) + ' ', 'utf-8') \
+             + bytes(q.read())                          \
+             + bytes('\n', 'utf-8')
+
+def handle_rqs(request, topic_name, ecp_name, ecp_port):
+
+    def check_parameters(request):
         params = request.split()
+        params_number = len(params)
 
-        if len(params) != 2:
-            print("Error: Bad request")
-            return error
+        if params_number != 8:
+            return (False, "", "", [])
 
-        print("Checking SID...")
+        sid     = params[1]
+        qid     = params[2]
+        answers = list(params[3:])
 
-        sid = params[1]
-        if not valid_sid(sid):
-            print("Bad request")
-            return error
+        return (True, sid, qid, answers)
 
-        print("Creating QID...")
+    def check_pair(sid, qid):
+        with open("transactions.txt", 'r') as f:
+            for line in f.readlines():
+                trio = line[:-1].split() # Remove newline and then split.
+                # trio is a list composed of SID, QID and quiz name.
+                if sid == trio[0] and qid == trio[1]:
+                    return (True, trio[2])
+        return (False, "")
 
-        qid = sid + '_' + date()
+    def check_answers(answers, quiz, deadline):
+        quizno = int(quiz[5:8])
+        correct_answers = ""
 
-        print("Choosing file...")
+        def predicate(f):
+            return f.startswith('T')  and f.endswith('.txt') and int(f[5:8]) == quizno
 
-        size = 0
-        while (size == 0):
-            quiz = random.choice([f for f in os.listdir('.') if f.endswith(".pdf")])
-            size = os.stat(quiz).st_size
+        answers_file = list(filter(predicate, os.listdir('.')))
 
-        print("Saving transaction...")
+        with open(answers_file, 'r') as f:
+            lines = f.readlines()
+            number_of_questions = len(lines)
+            correct_answers = list(map(str.strip, lines))
 
-        with open("transactions.txt", 'a') as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
-            f.write(sid + ' ' + qid + ' ' + quiz + '\n')
-            fcntl.flock(f, fcntl.LOCK_EX)
+        points = 0
+        for answer, correct in zip(answers, correct_answers):
+            if answer == correct:
+                points += 1
+            elif answer == 'N':
+                pass
+            else:
+                points -= 0.5
 
-        print("Sending file...")
+        # FIXME: Score should be -1 if answers submited after deadline
+        return math.ceil(100 * points / number_of_questions)
 
-        with open(quiz, 'r', encoding = "latin-1") as q:
-            return "AQT " + str(qid)  + ' ' \
-                          + deadline  + ' ' \
-                          + str(size) + ' ' \
-                          + ''.join(list(q)) + '\n'
+    def send_score_to_ECP(sid, qid, topic_name, score, hostname, port):
+        ip = socket.gethostbyname(hostname)
 
-    def handle_rqs(request):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as client:
+            client.settimeout(5.0)
 
-        def check_parameters_of(request):
-            params = request.split()
-            params_number = len(params)
+            iqr = bytes('IQR' + sid + qid + topic_name + score + '\n', 'utf-8')
+            tries = 5
 
-            if params_number != 8:
-                raise ValueError("Error: Number of parameters should be 8 not {}".format(params_number))
+            while tries > 0:
+                try:
+                    client.sendto(iqr, (ip, port))
+                    reply = client.makefile().readfile()
+                    print(reply)
 
-            sid     = params[1]
-            qid     = params[2]
-            answers = list(params[3:])
+                    if len(reply) == 28 and reply[0:4] == 'AWI ' and reply[4:28] == qid:
+                        break
+                    else:
+                        tries -= 1
+                except Exception as e:
+                    print('Error comunicating with ECP: {}'.format(str(e)))
 
-            return (sid, qid, answers)
+            if tries > 0:
+                return bytes(score, 'utf-8')
+            else:
+                return error
 
-        def check_pair(sid, qid):
-            with open("transactions.txt", 'r') as f:
-                for line in f.readlines():
-                    trio = line[:-1].split() # Remove newline and then split.
-                    # trio is a list composed of SID, QID and quiz name.
-                    if sid == trio[0] and qid == trio[1]:
-                        return (True, trio[2])
-            return (False, "")
+    print("Handling RQS request...")
+    checked, sid, qid, answers = check_parameters(request)
 
-        def check_answers(answers, quiz, deadline):
-            quizno = int(quiz[5:8])
-            correct_answers = ""
+    if not checked:
+        print("Error: Bad request")
+        return error
 
-            def predicate(f):
-                return f.startswith('T')  and f.endswith('.txt') and int(f[5:8]) == quizno
+    print("Checking pair SID-QID...")
+    checked, quiz = check_pair(sid, qid)
 
-            answers_file = list(filter(predicate, os.listdir('.')))
+    if not checked:
+        print("Error: SID and QID do not match")
+        return "-2\n"
 
-            with open(answers_file, 'r') as f:
-                lines = f.readlines()
-                number_of_questions = len(lines)
-                correct_answers = list(map(str.strip, lines))
+    print("Checking answers...")
+    score = str(check_answers(answers, deadline)) + '%'
+    print("Scored " + score)
 
-            points = 0
-            for answer, correct in zip(answers, correct_answers):
-                if answer == correct:
-                    points += 1
-                elif answer == 'N':
-                    pass
-                else:
-                    points -= 0.5
+    return send_score_to_ECP(sid, qid, score, ecp_name, ecp_port)
 
-            # FIXME: Score should be -1 if answers submited after deadline
-            return math.ceil(100 * points / number_of_questions)
 
-        print("Handling RQS request...")
-        sid, qid, answers = check_parameters_of(request)
-
-        print("Checking pair SID-QID...")
-        checked, quiz = check_pair(sid, qid)
-
-        if checked == False:
-            print("Error: SID and QID do not match")
-            return "-2\n"
-
-        print("Checking answers...")
-        score = str(check_answers(answers, deadline)) + '%'
-        print("Scored " + score)
-
-        #FIXME: Send things to ECP before returning
-
-        return score
-
+def handle(request, topic_name, ecp_name, ecp_port):
     if request[:3] == "RQT":
         return handle_rqt(request)
     elif request[:3] == "RQS":
-        return handle_rqs(request)
+        return handle_rqs(request, topic_name, ecp_name, ecp_port)
     else:
         return error
 
 
 
 if __name__ == '__main__':
+
+    topic_name, deadline = startup()
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", help = """TESport is the well-known port where the
                                      TES server accepts user requests, in TCP.
@@ -185,42 +229,29 @@ if __name__ == '__main__':
     if args.e and valid_port(args.e):
         ECPport = args.e
 
-
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-            server.setblocking(True)
-            server.bind(('', TESport))
-            server.listen(5)
-
-            print("Bound server on port {}".format(TESport))
-
-            while True:
-                try:
-                    conn, (ip, port) = server.accept() # FIXME: getting the wrong port!
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+        server.setblocking(True)
+        server.bind(('', TESport))
+        server.listen(10)
+        print("Server bound on port {}".format(TESport))
+        while True:
+            try:
+                with accept(server) as (conn, (ip, port)):
                     conn.settimeout(5.0)
                     print("Accepted {}:{}".format(ip, port))
-                except Exception as e:
-                    print("Failed to accept connection: {}".format(str(e)))
-                    continue
-
-                try:
-                    pid = os.fork()
-                except Exception as e:
-                    print("Failed to fork: {}".format(str(e)))
-                    conn.close()
-                else:
-                    if pid == 0:
-                        try:
+                    try:
+                        pid = os.fork()
+                        if pid == 0:
                             request = conn.makefile().readline()
                             print(request)
-                            conn.sendall(bytes(handle(request), "latin-1"))
-                            conn.close()
+                            reply = handle(request, topic_name, ECPname, ECPport)
+                            conn.sendall(reply)
+                    except Exception as e:
+                        print("Connection error: {}:{} : {}".format(ip, port, str(e)))
+                        conn.sendall(error)
+                    finally:
+                        if pid == 0:
                             sys.exit(0)
-                        except Exception as e:
-                            print("Connection error: {}:{} : {}".format(ip, port, str(e)))
-                        finally:
-                            conn.close()
-                            sys.exit(0)
+            except Exception as e:
+                print("Failed to accept connection", str(e))
 
-    except Exception as e:
-        print("Failed to open server socket on port {}: {}".format(TESport, str(e)))
