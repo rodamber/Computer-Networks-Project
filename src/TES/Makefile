@@ -1,13 +1,12 @@
-
 EXEC=TES
 
 all: $(EXEC)
 
 $(EXEC): *.py
-	zip -r $(EXEC).zip *.py
+	zip -r $(EXEC).zip $^
 	echo '#!/usr/bin/env python3' | cat - $(EXEC).zip > $(EXEC)
 	rm $(EXEC).zip
 	chmod +x $(EXEC)
 
 clean:
-	rm $(EXEC)
+	rm -f $(EXEC)
