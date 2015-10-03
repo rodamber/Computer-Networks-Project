@@ -8,6 +8,9 @@
 #include <string.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 #define PORTUDP 58000   /*porto para UDP*/
 #define PORTTCP 59000   /*porto para TCP*/
@@ -41,16 +44,42 @@ int main(int argc, char **argv){
 
     /*usados no request*/
 
-    char* topic;
-    char* msg="";
+    char topic[30];
+    char msg[30]="";
+    char qid[30];
+    char answers[5][5];
+    char qid_prov[1];
+
+    /*usados no aqs*/
+
+    char aqs[5];
+    char qid2[30];
+    char score[20];
+
+    /* AQT */
+
+    char aqt[6];
+    char time[20];
+    char size[30];
+    
+    /* PDF */
+
+    char pdf_name[20]="ficheiro.pdf";
+    char pdf_conteud[1];
+    int file;
+    size_t n_bytes;
+    ssize_t n_bytes_written; 
+    int close_success;
+    int iteracoes;
 
     /*TCP*/
 
     int tcp;
     struct hostent *hostptr_tcp;
     struct sockaddr_in serveraddr_tcp;
-    char* ip;
-    char* tcpport;
+    char ip[128];
+    char tcpport[10];
+    char buffer_tcp[500];
 
     /* Verificação de introdução de input */
 
@@ -67,7 +96,7 @@ int main(int argc, char **argv){
                 printf("error: %s\n",strerror(errno));
                 exit(1);
             }
-            strcpy(ecpport,"58000");
+            strcpy(ecpport,"58009");
         }
         if(argc==3){
             printf("error: insert ECPname\n");
@@ -81,8 +110,7 @@ int main(int argc, char **argv){
                 return 0;
             }
             if(argc==4){
-             /*buscar ECPport que sera 58000 + GN (group number)*/
-                strcpy(ecpport,"58000");
+                strcpy(ecpport,"58009");
             }
 	    if(argc==5){
                 printf("error: insert ECPport\n");
@@ -128,13 +156,6 @@ int main(int argc, char **argv){
     serveraddr_udp.sin_port=htons((u_short)(atoi(ecpport)));
     addrlen_udp=sizeof(serveraddr_udp);
 
-    printf("%d\n",atoi(ecpport));
-        
-    /* TCP TCP TCP TCP TCP TCP TCP TCP TCP TPC */
-    /*Criar socket TCP*/
-    
-
-
     /*Comandos do programa*/
     
     do {scanf("%s",command);
@@ -145,16 +166,17 @@ int main(int argc, char **argv){
             flag=0;
 
             /* Envia TQR para o ECP atraves do socket UDP */
+       
 
-
-            sendto(udp,"TQR\n",strlen("TQR\n"),0,(struct sockaddr*)&serveraddr_udp,addrlen_udp);
+            sendto(udp,"TQR\n",strlen("TQR\n"),0,(struct sockaddr*)&serveraddr_udp,addrlen_udp);       
             
             /* Recebe topicos do ECP por UDP */
   
-            recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
-            
-            
-           
+            n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
+            if(n1==-1){
+	        printf("error: %s\n",strerror(errno));
+                exit(1);
+            }
 
             /* parte string em string mais pequenas e preenche lista com strings */
             
@@ -185,14 +207,12 @@ int main(int argc, char **argv){
 
             /*imprime topicos de questinario*/            
 
-            indice=0;
-            while(indice<ntopics){
-                printf("%d- %s\n",indice,list[indice]);
+            indice=1;
+            while(indice<(ntopics+1)){
+                printf("%d- %s\n",indice,list[indice-1]);
                 indice++;
             }
-            break;
 
-            printf("%s\n",buffer_udp);
         }
             
         if (strcmp(command,"request")==0){
@@ -203,13 +223,15 @@ int main(int argc, char **argv){
 
             /* pede ao TES detalhes do seu endereco por UDP */
 
+            strcpy(msg,"");
             strcat(msg,"TER ");
             strcat(msg,topic);
-            sendto(udp,msg,strlen(msg)+1,0,(struct sockaddr*)&serveraddr_udp,addrlen_udp);
+            strcat(msg,"\n");
+            sendto(udp,msg,strlen(msg),0,(struct sockaddr*)&serveraddr_udp,addrlen_udp);
 
             /* recebe IP e Port do TES */
             
-            n1=recvfrom(udp,buffer_udp,1000,0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
+            n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
             if(n1==-1){
 	        printf("error: %s\n",strerror(errno));
                 exit(1);
@@ -223,50 +245,275 @@ int main(int argc, char **argv){
                 printf("Error: TER not correctly formulated\n");
             if(strcmp(tqrreply,"AWTES")==0){
                 token1=strtok(NULL," ");
-                ip=token1;
+                strcpy(ip,token1);
+                printf("%s\n",ip);
                 token1=strtok(NULL," ");
-                tcpport=token1;    
+                strcpy(tcpport,token1); 
+                printf ("%s\n",tcpport);  
             }
             else
                 printf("Error: Incorrect reply from ECP\n");
-
-            /* parte TCP */
             
             /* criar socket TCP */
 
             tcp=socket(AF_INET,SOCK_STREAM,0);
+            if(tcp==-1){
+                printf("error: %s\n",strerror(errno));
+                exit(1);
+            } 
 
-            hostptr_tcp=gethostbyname(ip);
+            /*Buscar adress do servidor TCP*/
+
+            if((hostptr_tcp=gethostbyname(ip))==NULL){
+                printf("error: %s\n",strerror(errno));
+                exit(1);
+            } 
+
+            /*Associar socket a adress do servidor TCP*/
             
             memset((void*)&serveraddr_tcp,(int)'\0',sizeof(serveraddr_tcp));
             serveraddr_tcp.sin_family=AF_INET;
             serveraddr_tcp.sin_addr.s_addr=((struct in_addr *)(hostptr_tcp->h_addr_list[0]))->s_addr;
-            serveraddr_tcp.sin_port=htons((u_short)(atoi(tcpport)));
+            serveraddr_tcp.sin_port=htons((u_short)(atoi(tcpport))); 
             
             /* conexao TCP */
 
-            connect(tcp,(struct sockaddr*)&serveraddr_tcp,sizeof(serveraddr_tcp));
+            n=connect(tcp,(struct sockaddr*)&serveraddr_tcp,sizeof(serveraddr_tcp));
+            if(n==-1){
+                printf("error: %s\n",strerror(errno));
+                exit(1);
+            }
 
             /* enviar RQT */ 
+
+            strcpy(msg,"");
+            strcat(msg,"RQT ");
+            strcat(msg,sid);
+            strcat(msg,"\n");
+
+            n=write(tcp,msg,strlen(msg));
+            if(n<=0){
+                printf("error: %s\n",strerror(errno));
+                exit(1);
+            } 
+
+            /* recebe AQT */
+
+            n=read(tcp,aqt,(4*sizeof(char)));
+            if(n==-1){
+                printf("error: %s\n",strerror(errno));
+                exit(1);
+            }
+
+            token1=strtok(aqt," ");
+            strcpy(aqt,token1);
+            if(strcmp(aqt,"AQT")!=0){
+                printf("ERR\n");
+                exit(1);
+            }
+
+            /* recebe QID */ 
+         
+            n=read(tcp,qid_prov,sizeof(char));
+            if(n==-1){
+                printf("error: %s\n",strerror(errno));
+                exit(1);
+            }
             
-            flag=0;
-            break;
-        }
+
+            n1=0;
+            while(qid_prov[0]!=' '){
+
+                qid[n1]=qid_prov[0];
+                n=read(tcp,qid_prov,sizeof(char));
+                if(n==-1){
+                    printf("error: %s\n",strerror(errno));
+                    exit(1);
+                }
+                n1++;
+            } 
+            qid[n1]='\0';
+
+            /* recebe time */
+
+            n=read(tcp,time,(19*sizeof(char)));
+            if(n==-1){
+                printf("error: %s\n",strerror(errno));
+                exit(1);
+            }
+            token1=strtok(time," ");
+            strcpy(time,token1);
+
+            /* recebe size */
+
+            n=read(tcp,qid_prov,sizeof(char));
+            if(n==-1){
+                printf("error: %s\n",strerror(errno));
+                exit(1);
+            }
+            n1=0;
+            while(qid_prov[0]!=' '){
+                size[n1]=qid_prov[0];
+                n=read(tcp,qid_prov,sizeof(char));
+                if(n==-1){
+                    printf("error: %s\n",strerror(errno));
+                    exit(1);
+                }
+                n1++;
+            }
+            size[n1]='\0';
+            
+            /*recebe data e escreve no ficheiro*/
+
+            n1=0;
+
+            file = open(pdf_name, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
+                if (file==-1)
+                    return -1;
+
+
+            while(n1<(atoi(size))){ 
+
+                /* escrever no ficheiro */
+
+                n=read(tcp,pdf_conteud,sizeof(pdf_conteud));
+                if(n==-1){
+                    printf("error: %s\n",strerror(errno));
+                    exit(1);
+                }
+
+                n_bytes = sizeof(pdf_conteud);
+              
+                n_bytes_written = write(file, pdf_conteud, n_bytes);
+                if(n_bytes_written != n_bytes){
+                    close(file);
+                    return -1;
+                }
+
+                n1++;
+
+
+            }
+
+            close_success = close(file);
+                if(close_success!=0)
+                    return -1;
+
+            printf("PDF transfered\n");
+
+            while(strcmp(buffer_tcp,"")!=0){
+
+                n=read(tcp,buffer_tcp,sizeof(buffer_tcp));
+                    if(n==-1){
+                        printf("error: %s\n",strerror(errno));
+                        exit(1);
+                    }
+
+                printf("%s\n",buffer_tcp);
+            }
+
+            printf("mamas\n");
+
+
+            flag=0;    
+        } 
           
         if (strcmp(command,"submit")==0){
 
-            /* Chama a funcao responsavel pela execucao do comando submit */
+            /* receber respostas do utilizador */
 
+            n=0;
+            while(n<5){
+                scanf("%s",answers[n]);
+                if((strcmp(answers[n],"A")!=0)&&(strcmp(answers[n],"B")!=0)&&(strcmp(answers[n],"C")!=0)&&(strcmp(answers[n],"D")!=0))
+                    printf("error: answer must be A, B, C or D\n");
+                if(strcmp(answers[n],"")==0)
+                    strcpy(answers[n],"N");
+                n++;
+            }
+
+            if(n>5){
+                printf("error: only 5 answers are accepted\n");  
+                exit(1);
+            }          
+
+            /* construir e enviar RQS */
+
+            strcpy(msg,"");
+            strcat(msg,"RQS ");
+            strcat(msg,sid);
+            strcat(msg," ");
+            strcat(msg,qid);
+            n=0;
+            while(n<5){
+                strcat(msg," ");
+                strcat(msg,answers[n]);
+                n++;
+            }
+            strcat(msg,"\n");
+
+            n=write(tcp,msg,strlen(msg));
+            if(n<=0){
+                printf("error: %s\n",strerror(errno));
+                exit(1);
+            } 
+
+            /* receber AQS */
+
+            n=read(tcp,aqs,(4*sizeof(char)));
+            if(n==-1){
+                printf("error: %s\n",strerror(errno));
+                exit(1);
+            }
+
+            token1=strtok(aqs," ");
+            strcpy(aqs,token1);
+
+            printf("%s\n",aqs);
+
+            if(strcmp(aqs,"AQS")!=0){
+                printf("ERR\n");
+                exit(1);
+            }
+
+            /* recebe QID */ 
+         
+            n=read(tcp,qid_prov,sizeof(char));
+            if(n==-1){
+                printf("error: %s\n",strerror(errno));
+                exit(1);
+            }
             
 
+            n1=0;
+            while(qid_prov[0]!=' '){
 
+                qid[n1]=qid_prov[0];
+                n=read(tcp,qid_prov,sizeof(char));
+                if(n==-1){
+                    printf("error: %s\n",strerror(errno));
+                    exit(1);
+                }
+                n1++;
+            } 
+            qid[n1]='\0';
 
+            /* recebe time */
 
+            n=read(tcp,score,(3*sizeof(char)));
+            if(n==-1){
+                printf("error: %s\n",strerror(errno));
+                exit(1);
+            }
+            token1=strtok(score," ");
+            strcpy(score,token1);
 
+            /* imprimir score */
+
+            printf("Obtained score: %s\n",score);
 
             flag=0;
-            break;
-           
+                     
         }
 	
 	if (strcmp(command,"exit")==0)
