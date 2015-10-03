@@ -2,13 +2,9 @@
 
 import argparse
 import contextlib
-import fcntl
-import math
 import os
-import random
 import socket
 import sys
-import time
 
 import handle
 
