@@ -1,16 +1,19 @@
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <sys/types.h>
+#include <unistd.h>
 
+#include "../utils.h"
+
+#define QID_SIZE 24
 
 #define PORTUDP 58000   /*porto para UDP*/
 #define PORTTCP 59000   /*porto para TCP*/
@@ -46,7 +49,7 @@ int main(int argc, char **argv){
 
     char topic[30];
     char msg[30]="";
-    char qid[30];
+    char qid[25];
     char answers[5][5];
     char qid_prov[1];
 
@@ -61,14 +64,13 @@ int main(int argc, char **argv){
     char aqt[6];
     char time[20];
     char size[30];
-    
+
     /* PDF */
 
     char pdf_name[20]="ficheiro.pdf";
-    char pdf_conteud[1];
     int file;
     size_t n_bytes;
-    ssize_t n_bytes_written; 
+    ssize_t n_bytes_written;
     int close_success;
     int iteracoes;
 
@@ -79,7 +81,6 @@ int main(int argc, char **argv){
     struct sockaddr_in serveraddr_tcp;
     char ip[128];
     char tcpport[10];
-    char buffer_tcp[500];
 
     /* Verificação de introdução de input */
 
@@ -88,68 +89,68 @@ int main(int argc, char **argv){
             strcpy(sid,argv[1]);
         }
         else{
-            printf("error: sid must have 5 digits\n");
+            fprintf(stderr, "error: sid must have 5 digits\n");
             return 0;
         }
         if(argc==2){
             if(gethostname(ecpname,128)==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error: ");
                 exit(1);
             }
             strcpy(ecpport,"58009");
         }
         if(argc==3){
-            printf("error: insert ECPname\n");
+            fprintf(stderr, "error: insert ECPname\n");
             return 0;
         }
         if(argc>=4){
             if(strcmp(argv[2],"-n")==0)
                 strcpy(ecpname,argv[3]);
             else{
-                printf("error: -n not inserted\n");
+                fprintf(stderr, "error: -n not inserted\n");
                 return 0;
             }
             if(argc==4){
                 strcpy(ecpport,"58009");
             }
-	    if(argc==5){
-                printf("error: insert ECPport\n");
+      if(argc==5){
+                fprintf(stderr, "error: insert ECPport\n");
                 return 0;
             }
             if(argc==6){
                 if(strcmp(argv[4],"-p")==0)
                     strcpy(ecpport,argv[5]);
                 else{
-                    printf("error: -p not inserted\n");
+                    fprintf(stderr, "error: -p not inserted\n");
                     return 0;
                 }
-            }       
-        }      
+            }
+        }
     }
     else{
-        printf("error: insert sid\n");
+        fprintf(stderr, "error: insert sid\n");
         return 0;
     }
 
 
     /* UDP UDP UDP UDP UDP UDP UDP UDP UDP UDP */
     /*Criar socket UDP*/
-    
+
     udp=socket(AF_INET,SOCK_DGRAM,0);
     if(udp==-1){
-        printf("error: %s\n",strerror(errno));
+        perror("error: ");
         exit(1);
     }
-    
+
     /*Buscar adress do servidor ECP*/
- 
+
     if((hostptr_udp=gethostbyname(ecpname))==NULL){
-        printf("error: %s\n",strerror(errno));
+        perror("error: ");
         exit(1);
     }
 
     /*Associar socket a adress do servidor ECP*/
-    
+
     memset((void*)&serveraddr_udp, (int)'\0',sizeof(serveraddr_udp));
     serveraddr_udp.sin_family=AF_INET;
     serveraddr_udp.sin_addr.s_addr=((struct in_addr *)(hostptr_udp->h_addr_list[0]))->s_addr;
@@ -157,36 +158,36 @@ int main(int argc, char **argv){
     addrlen_udp=sizeof(serveraddr_udp);
 
     /*Comandos do programa*/
-    
+
     do {scanf("%s",command);
         flag=1;
-           
+
         if (strcmp(command,"list")==0){
 
             flag=0;
 
             /* Envia TQR para o ECP atraves do socket UDP */
-       
 
-            sendto(udp,"TQR\n",strlen("TQR\n"),0,(struct sockaddr*)&serveraddr_udp,addrlen_udp);       
-            
+
+            sendto(udp,"TQR\n",strlen("TQR\n"),0,(struct sockaddr*)&serveraddr_udp,addrlen_udp);
+
             /* Recebe topicos do ECP por UDP */
-  
+
             n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
             if(n1==-1){
-	        printf("error: %s\n",strerror(errno));
+          perror("error: ");
                 exit(1);
             }
 
             /* parte string em string mais pequenas e preenche lista com strings */
-            
+
             token1=strtok(buffer_udp," ");
             tqrreply=token1;
 
             if(strcmp(tqrreply,"EOF")==0)
-                printf("Error: Reply not sent by ECP\n");
+                fprintf(stderr, "error: Reply not sent by ECP\n");
             if(strcmp(tqrreply,"ERR")==0)
-                printf("Error: TQR not correctly formulated\n");
+                fprintf(stderr, "error: TQR not correctly formulated\n");
             if(strcmp(tqrreply,"AWT")==0){
                 token1=strtok(NULL," ");
                 ntopics=atoi(token1);
@@ -198,14 +199,14 @@ int main(int argc, char **argv){
                     indice++;
                 }
                 if(indice!=ntopics){
-                    printf("Error: Number of topics received is incorrect\n");
+                    fprintf(stderr, "error: Number of topics received is incorrect\n");
                     exit(1);
                 }
             }
             else
-                printf("Error: Incorrect reply from ECP\n");
+                fprintf(stderr, "error: Incorrect reply from ECP\n");
 
-            /*imprime topicos de questinario*/            
+            /*imprime topicos de questinario*/
 
             indice=1;
             while(indice<(ntopics+1)){
@@ -214,7 +215,7 @@ int main(int argc, char **argv){
             }
 
         }
-            
+
         if (strcmp(command,"request")==0){
 
             /* le numero do topico */
@@ -230,61 +231,61 @@ int main(int argc, char **argv){
             sendto(udp,msg,strlen(msg),0,(struct sockaddr*)&serveraddr_udp,addrlen_udp);
 
             /* recebe IP e Port do TES */
-            
+
             n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
             if(n1==-1){
-	        printf("error: %s\n",strerror(errno));
+          perror("error: ");
                 exit(1);
             }
             token1=strtok(buffer_udp," ");
             tqrreply=token1;
 
             if(strcmp(tqrreply,"EOF")==0)
-                printf("Error: Reply not sent by ECP\n");
+                fprintf(stderr, "error: Reply not sent by ECP\n");
             if(strcmp(tqrreply,"ERR")==0)
-                printf("Error: TER not correctly formulated\n");
+                fprintf(stderr, "error: TER not correctly formulated\n");
             if(strcmp(tqrreply,"AWTES")==0){
                 token1=strtok(NULL," ");
                 strcpy(ip,token1);
                 printf("%s\n",ip);
                 token1=strtok(NULL," ");
-                strcpy(tcpport,token1); 
-                printf ("%s\n",tcpport);  
+                strcpy(tcpport,token1);
+                printf ("%s\n",tcpport);
             }
             else
-                printf("Error: Incorrect reply from ECP\n");
-            
+                fprintf(stderr, "error: Incorrect reply from ECP\n");
+
             /* criar socket TCP */
 
             tcp=socket(AF_INET,SOCK_STREAM,0);
             if(tcp==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error: ");
                 exit(1);
-            } 
+            }
 
             /*Buscar adress do servidor TCP*/
 
             if((hostptr_tcp=gethostbyname(ip))==NULL){
-                printf("error: %s\n",strerror(errno));
+                perror("error: ");
                 exit(1);
-            } 
+            }
 
             /*Associar socket a adress do servidor TCP*/
-            
+
             memset((void*)&serveraddr_tcp,(int)'\0',sizeof(serveraddr_tcp));
             serveraddr_tcp.sin_family=AF_INET;
             serveraddr_tcp.sin_addr.s_addr=((struct in_addr *)(hostptr_tcp->h_addr_list[0]))->s_addr;
-            serveraddr_tcp.sin_port=htons((u_short)(atoi(tcpport))); 
-            
+            serveraddr_tcp.sin_port=htons((u_short)(atoi(tcpport)));
+
             /* conexao TCP */
 
             n=connect(tcp,(struct sockaddr*)&serveraddr_tcp,sizeof(serveraddr_tcp));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error: ");
                 exit(1);
             }
 
-            /* enviar RQT */ 
+            /* enviar RQT */
 
             strcpy(msg,"");
             strcat(msg,"RQT ");
@@ -293,62 +294,42 @@ int main(int argc, char **argv){
 
             n=write(tcp,msg,strlen(msg));
             if(n<=0){
-                printf("error: %s\n",strerror(errno));
-                exit(1);
-            } 
-
-            /* recebe AQT */
-
-            n=read(tcp,aqt,(4*sizeof(char)));
-            if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error: ");
                 exit(1);
             }
 
-            token1=strtok(aqt," ");
-            strcpy(aqt,token1);
-            if(strcmp(aqt,"AQT")!=0){
+            /* recebe AQT */
+
+            if(read_bytes(tcp, 4, aqt) == -1){
+                perror("error: ");
+                exit(1);
+            }
+
+            if (strncmp(aqt, "AQT ", 4) != 0) {
                 printf("ERR\n");
                 exit(1);
             }
 
-            /* recebe QID */ 
-         
-            n=read(tcp,qid_prov,sizeof(char));
-            if(n==-1){
-                printf("error: %s\n",strerror(errno));
+            /* recebe QID */
+            if ((n = read_bytes(tcp, QID_SIZE, qid)) == -1 || n != QID_SIZE) {
+                printf("ERR\n");
+                perror("error: ");
                 exit(1);
             }
-            
-
-            n1=0;
-            while(qid_prov[0]!=' '){
-
-                qid[n1]=qid_prov[0];
-                n=read(tcp,qid_prov,sizeof(char));
-                if(n==-1){
-                    printf("error: %s\n",strerror(errno));
-                    exit(1);
-                }
-                n1++;
-            } 
-            qid[n1]='\0';
 
             /* recebe time */
-
-            n=read(tcp,time,(19*sizeof(char)));
-            if(n==-1){
-                printf("error: %s\n",strerror(errno));
+            if((n = read_bytes(tcp, (19 * sizeof(char)), time)) == -1){
+                perror("error: ");
+                exit(1);
+            } else if (n != 19) {
+                printf("ERR\n");
                 exit(1);
             }
-            token1=strtok(time," ");
-            strcpy(time,token1);
 
             /* recebe size */
-
             n=read(tcp,qid_prov,sizeof(char));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error: ");
                 exit(1);
             }
             n1=0;
@@ -356,68 +337,62 @@ int main(int argc, char **argv){
                 size[n1]=qid_prov[0];
                 n=read(tcp,qid_prov,sizeof(char));
                 if(n==-1){
-                    printf("error: %s\n",strerror(errno));
+                    perror("error: ");
                     exit(1);
                 }
                 n1++;
             }
             size[n1]='\0';
-            
+
             /*recebe data e escreve no ficheiro*/
 
-            n1=0;
 
-            file = open(pdf_name, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
-                if (file==-1)
-                    return -1;
+            file = open(pdf_name, O_WRONLY | O_CREAT,
+                        S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
 
+            if (file == -1)
+                return -1;
 
-            while(n1<(atoi(size))){ 
+            /* escrever no ficheiro */
+            n1 = 0;
+            int size_i = atoi(size);
+            char pdf_conteud[1];
 
-                /* escrever no ficheiro */
+            while(n1 < size_i){
+                n = read(tcp, pdf_conteud, sizeof(pdf_conteud));
 
-                n=read(tcp,pdf_conteud,sizeof(pdf_conteud));
-                if(n==-1){
-                    printf("error: %s\n",strerror(errno));
+                if(n == -1){
+                    perror("error: ");
                     exit(1);
                 }
 
-                n_bytes = sizeof(pdf_conteud);
-              
-                n_bytes_written = write(file, pdf_conteud, n_bytes);
-                if(n_bytes_written != n_bytes){
-                    close(file);
+                n_bytes_written = write(file, pdf_conteud, sizeof(pdf_conteud));
+
+                if(n_bytes_written != sizeof(pdf_conteud) || close(file) == -1) {
                     return -1;
                 }
-
                 n1++;
-
-
             }
 
-            close_success = close(file);
-                if(close_success!=0)
-                    return -1;
+            if(close(file) == -1)
+                return -1;
 
             printf("PDF transfered\n");
 
-            while(strcmp(buffer_tcp,"")!=0){
-
-                n=read(tcp,buffer_tcp,sizeof(buffer_tcp));
-                    if(n==-1){
-                        printf("error: %s\n",strerror(errno));
-                        exit(1);
-                    }
-
+            char buffer_tcp[500];
+            while(strcmp(buffer_tcp, "") != 0){
+                n = read(tcp, buffer_tcp, sizeof(buffer_tcp));
+                if(n == -1) {
+                    perror("error: ");
+                    exit(1);
+                }
                 printf("%s\n",buffer_tcp);
             }
+            flag = 0;
+        }
 
-            printf("mamas\n");
 
 
-            flag=0;    
-        } 
-          
         if (strcmp(command,"submit")==0){
 
             /* receber respostas do utilizador */
@@ -426,16 +401,16 @@ int main(int argc, char **argv){
             while(n<5){
                 scanf("%s",answers[n]);
                 if((strcmp(answers[n],"A")!=0)&&(strcmp(answers[n],"B")!=0)&&(strcmp(answers[n],"C")!=0)&&(strcmp(answers[n],"D")!=0))
-                    printf("error: answer must be A, B, C or D\n");
+                    fprintf(stderr, "error: answer must be A, B, C or D\n");
                 if(strcmp(answers[n],"")==0)
                     strcpy(answers[n],"N");
                 n++;
             }
 
             if(n>5){
-                printf("error: only 5 answers are accepted\n");  
+                fprintf(stderr, "error: only 5 answers are accepted\n");
                 exit(1);
-            }          
+            }
 
             /* construir e enviar RQS */
 
@@ -454,15 +429,15 @@ int main(int argc, char **argv){
 
             n=write(tcp,msg,strlen(msg));
             if(n<=0){
-                printf("error: %s\n",strerror(errno));
+                perror("error: ");
                 exit(1);
-            } 
+            }
 
             /* receber AQS */
 
             n=read(tcp,aqs,(4*sizeof(char)));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error: ");
                 exit(1);
             }
 
@@ -476,14 +451,14 @@ int main(int argc, char **argv){
                 exit(1);
             }
 
-            /* recebe QID */ 
-         
+            /* recebe QID */
+
             n=read(tcp,qid_prov,sizeof(char));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error: ");
                 exit(1);
             }
-            
+
 
             n1=0;
             while(qid_prov[0]!=' '){
@@ -491,18 +466,18 @@ int main(int argc, char **argv){
                 qid[n1]=qid_prov[0];
                 n=read(tcp,qid_prov,sizeof(char));
                 if(n==-1){
-                    printf("error: %s\n",strerror(errno));
+                    perror("error: ");
                     exit(1);
                 }
                 n1++;
-            } 
+            }
             qid[n1]='\0';
 
             /* recebe time */
 
             n=read(tcp,score,(3*sizeof(char)));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error: ");
                 exit(1);
             }
             token1=strtok(score," ");
@@ -513,15 +488,15 @@ int main(int argc, char **argv){
             printf("Obtained score: %s\n",score);
 
             flag=0;
-                     
-        }
-	
-	if (strcmp(command,"exit")==0)
-	   flag=0;
 
-	if (flag)
-            printf("error: unknown command\n");
-        
+        }
+
+  if (strcmp(command,"exit")==0)
+     flag=0;
+
+  if (flag)
+            fprintf(stderr, "error: unknown command\n");
+
     }while(strcmp(command,"exit")!=0);
 
     close(udp);
@@ -529,7 +504,3 @@ int main(int argc, char **argv){
 
     return 0;
 }
-
-                
-
-

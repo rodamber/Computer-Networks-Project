@@ -5,6 +5,7 @@ import contextlib
 import os
 import socket
 import sys
+import traceback
 
 import handle
 
@@ -78,15 +79,17 @@ def main():
                         if pid == 0:
                             request = conn.makefile().readline()
                             print(request)
-                            reply = handle(request, deadline, topic_name, ECPname, ECPport)
+                            reply = handle.handle(request, deadline, topic_name, ECPname, ECPport)
                             conn.sendall(reply)
                     except Exception as e:
+                        traceback.print_exc()
                         print("Connection error: {}:{} : {}".format(ip, port, str(e)))
                         conn.sendall(error)
                     finally:
                         if pid == 0:
                             sys.exit(0)
             except Exception as e:
+                traceback.print_exc()
                 print("Failed to accept connection", str(e))
 
 

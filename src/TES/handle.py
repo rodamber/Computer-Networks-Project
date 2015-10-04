@@ -4,6 +4,7 @@ import random
 import os
 import socket
 import time
+import traceback
 
 
 
@@ -79,6 +80,7 @@ def send_score_to_ECP(sid, qid, topic_name, score, hostname, port):
                 else:
                     tries -= 1
             except Exception as e:
+                traceback.print_exc()
                 print('Error comunicating with ECP: {}'.format(str(e)))
 
         if tries > 0:
@@ -122,7 +124,7 @@ def handle_rqt(request, deadline):
         f.write(sid + ' ' + qid + ' ' + quiz + '\n')
         fcntl.flock(f, fcntl.LOCK_EX)
 
-    print("Sending file...")
+    print("Sending file...\n")
 
     with open(quiz, 'rb') as q:
         return bytes("AQT " + str(qid)  + ' '           \
