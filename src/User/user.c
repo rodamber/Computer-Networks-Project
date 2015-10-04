@@ -97,7 +97,7 @@ int main(int argc, char **argv){
         }
         if(argc==2){
             if(gethostname(ecpname,128)==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             }
             strcpy(ecpport,"58009");
@@ -141,14 +141,14 @@ int main(int argc, char **argv){
     
     udp=socket(AF_INET,SOCK_DGRAM,0);
     if(udp==-1){
-        printf("error: %s\n",strerror(errno));
+        perror("error");
         exit(1);
     }
     
     /*Buscar adress do servidor ECP*/
  
     if((hostptr_udp=gethostbyname(ecpname))==NULL){
-        printf("error: %s\n",strerror(errno));
+        perror("error");
         exit(1);
     }
 
@@ -186,7 +186,7 @@ int main(int argc, char **argv){
   
             n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
             if(n1==-1){
-	        printf("error: %s\n",strerror(errno));
+	        perror("error");
                 exit(1);
             }
 
@@ -248,7 +248,7 @@ int main(int argc, char **argv){
             
             n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
             if(n1==-1){
-	          printf("error: %s\n",strerror(errno));
+	          perror("error");
                 exit(1);
             }
             token1=strtok(buffer_udp," ");
@@ -288,14 +288,14 @@ int main(int argc, char **argv){
 
             tcp=socket(AF_INET,SOCK_STREAM,0);
             if(tcp==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             } 
 
             /*Buscar adress do servidor TCP*/
 
             if((hostptr_tcp=gethostbyname(ip))==NULL){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             } 
 
@@ -310,7 +310,7 @@ int main(int argc, char **argv){
 
             n=connect(tcp,(struct sockaddr*)&serveraddr_tcp,sizeof(serveraddr_tcp));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             }
 
@@ -323,7 +323,7 @@ int main(int argc, char **argv){
 
             n=write(tcp,msg,strlen(msg));
             if(n<=0){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             } 
 
@@ -331,7 +331,7 @@ int main(int argc, char **argv){
 
             n=read(tcp,aqt,(4*sizeof(char)));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             }
 
@@ -346,7 +346,7 @@ int main(int argc, char **argv){
          
             n=read(tcp,qid_prov,sizeof(char));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             }
             
@@ -358,7 +358,7 @@ int main(int argc, char **argv){
                 qid[n1]=qid_prov[0];
                 n=read(tcp,qid_prov,sizeof(char));
                 if(n==-1){
-                    printf("error: %s\n",strerror(errno));
+                    perror("error");
                     exit(1);
                 }
                 n1++;
@@ -369,7 +369,7 @@ int main(int argc, char **argv){
 
             n=read(tcp,time,(19*sizeof(char)));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             }
             token1=strtok(time," ");
@@ -379,7 +379,7 @@ int main(int argc, char **argv){
 
             n=read(tcp,qid_prov,sizeof(char));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             }
             n1=0;
@@ -387,7 +387,7 @@ int main(int argc, char **argv){
                 size[n1]=qid_prov[0];
                 n=read(tcp,qid_prov,sizeof(char));
                 if(n==-1){
-                    printf("error: %s\n",strerror(errno));
+                    perror("error");
                     exit(1);
                 }
                 n1++;
@@ -409,7 +409,7 @@ int main(int argc, char **argv){
 
                 n=read(tcp,pdf_conteud,sizeof(pdf_conteud));
                 if(n==-1){
-                    printf("error: %s\n",strerror(errno));
+                    perror("error");
                     exit(1);
                 }
 
@@ -436,7 +436,7 @@ int main(int argc, char **argv){
 
                 n=read(tcp,buffer_tcp,sizeof(buffer_tcp));
                     if(n==-1){
-                        printf("error: %s\n",strerror(errno));
+                        perror("error");
                         exit(1);
                     }
 
@@ -490,7 +490,7 @@ int main(int argc, char **argv){
 
             n=write(tcp,msg,strlen(msg));
             if(n<=0){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             } 
 
@@ -498,7 +498,7 @@ int main(int argc, char **argv){
 
             n=read(tcp,aqs,(4*sizeof(char)));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             }
 
@@ -516,7 +516,7 @@ int main(int argc, char **argv){
          
             n=read(tcp,qid_prov,sizeof(char));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             }
             
@@ -527,7 +527,7 @@ int main(int argc, char **argv){
                 qid[n1]=qid_prov[0];
                 n=read(tcp,qid_prov,sizeof(char));
                 if(n==-1){
-                    printf("error: %s\n",strerror(errno));
+                    perror("error");
                     exit(1);
                 }
                 n1++;
@@ -538,7 +538,7 @@ int main(int argc, char **argv){
 
             n=read(tcp,score,(3*sizeof(char)));
             if(n==-1){
-                printf("error: %s\n",strerror(errno));
+                perror("error");
                 exit(1);
             }
             token1=strtok(score," ");
