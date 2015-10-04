@@ -1,0 +1,8 @@
+tests/run_all_tests
+src/ECP/ECP
+src/TES/TES
+src/User/user
+*.o
+*.d
+__pycache__
+transactions.txt
