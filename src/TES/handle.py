@@ -23,7 +23,7 @@ def date():
 def check_pair(sid, qid):
     with open("transactions.txt", 'r') as f:
         for line in f.readlines():
-            trio = line[:-1].split() # Remove newline and then split.
+            trio = line.strip().split()
             # trio is a list composed of SID, QID and quiz name.
             if sid == trio[0] and qid == trio[1]:
                 return (True, trio[2])
@@ -31,13 +31,15 @@ def check_pair(sid, qid):
 
 
 def check_answers(answers, quiz, deadline):
+    answers = answers.split()
+
     quizno = int(quiz[5:8])
     correct_answers = ""
 
     def predicate(f):
-        return f.startswith('T')  and f.endswith('.txt') and int(f[5:8]) == quizno
+        return f.startswith('T') and f.endswith('A.txt') and int(f[5:8]) == quizno
 
-    answers_file = list(filter(predicate, os.listdir('.')))
+    answers_file = list(filter(predicate, os.listdir('.')))[0]
 
     with open(answers_file, 'r') as f:
         lines = f.readlines()
@@ -85,7 +87,7 @@ def send_score_to_ECP(sid, qid, topic_name, score, hostname, port):
             return error
 
 
-def handle_rqt(request):
+def handle_rqt(request, deadline):
     print("Handling RQT request...")
 
     params = request.split()
@@ -166,9 +168,9 @@ def handle_rqs(request, topic_name, ecp_name, ecp_port):
     return send_score_to_ECP(sid, qid, score, ecp_name, ecp_port)
 
 
-def handle(request, topic_name, ecp_name, ecp_port):
+def handle(request, deadline, topic_name, ecp_name, ecp_port):
     if request[:3] == "RQT":
-        return handle_rqt(request)
+        return handle_rqt(request, deadline)
     elif request[:3] == "RQS":
         return handle_rqs(request, topic_name, ecp_name, ecp_port)
     else:
