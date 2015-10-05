@@ -2,6 +2,8 @@
 #define __UTILS_H__
 
 
+#include <sys/types.h>
+
 // WARNING
 //
 // Avoid the *FAIL macros, as the applications must not crash!
