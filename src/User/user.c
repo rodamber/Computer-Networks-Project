@@ -30,6 +30,8 @@
 #define DEFAULT_UDP_PORT 58009
 #define DEFAULT_TCP_PORT 59000
 
+#define ABORT do { perror("Error: "); return -1; } while (0)
+
 int valid_sid(const char * sid) {
     if (strlen(sid) != SID_SIZE) {
         return 0;
@@ -49,14 +51,12 @@ int main(int argc, char *argv[]) {
     // -----------------------------------------------------------------------------
     // Parse command line arguments
     char * sid = argv[1];
+
     if (sid == NULL) {
         printf("Must enter SID\n");
         return -1;
-    }
-
-    if (!valid_sid(sid)) {
-    DEBUG_PRINT("SID: %s\n", sid);
-
+    } else if (!valid_sid(sid)) {
+        DEBUG_PRINT("SID: %s\n", sid);
         printf("Invalid SID\n");
         return -1;
     }
@@ -67,6 +67,7 @@ int main(int argc, char *argv[]) {
 
     int option;
     optind = 2;
+
     while((option = getopt(argc, argv, "n:p:")) != -1) {
         if(option == 'n') {
             ECPname = strdup(optarg);
@@ -86,6 +87,23 @@ int main(int argc, char *argv[]) {
 
     /* open the connection here */
 
+    int ecp_socket;
+    if((ecp_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1) ABORT;
+
+    DEBUG_PRINT("ECP socket file descriptor: %d\n", ecp_socket);
+
+    struct hostent * ecp;
+    if ((ecp = gethostbyname(ECPname)) == NULL) ABORT;
+
+    DEBUG_PRINT("ecp: %s\n\n", ecp->h_name);
+
+
+    struct sockaddr_in ecp_address = {
+        .sin_family      = AF_INET,
+        .sin_addr.s_addr = ((struct in_addr *) (ecp->h_addr_list[0]))->s_addr,
+        .sin_port        = htons((unsigned short) ECPport)
+    };
+
 
     while (1) {
         printf("Please, enter a command\n");
@@ -100,6 +118,8 @@ int main(int argc, char *argv[]) {
             return -1;
         }
         DEBUG_PRINT("\nCommand entered: %sCommand size: %d\n", command, command_cap);
+
+        /* reply to the other commands here */
 
         if (strncmp(command, "exit", 4) == 0) {
             free(command);
