@@ -154,7 +154,7 @@ int main(int argc, char **argv){
     memset((void*)&serveraddr_udp, (int)'\0',sizeof(serveraddr_udp));
     serveraddr_udp.sin_family=AF_INET;
     serveraddr_udp.sin_addr.s_addr=((struct in_addr *)(hostptr_udp->h_addr_list[0]))->s_addr;
-    serveraddr_udp.sin_port=htons((u_short)(atoi(ecpport)));
+    serveraddr_udp.sin_port=htons((unsigned short)(atoi(ecpport)));
     addrlen_udp=sizeof(serveraddr_udp);
 
     /*Comandos do programa*/
@@ -275,7 +275,7 @@ int main(int argc, char **argv){
             memset((void*)&serveraddr_tcp,(int)'\0',sizeof(serveraddr_tcp));
             serveraddr_tcp.sin_family=AF_INET;
             serveraddr_tcp.sin_addr.s_addr=((struct in_addr *)(hostptr_tcp->h_addr_list[0]))->s_addr;
-            serveraddr_tcp.sin_port=htons((u_short)(atoi(tcpport)));
+            serveraddr_tcp.sin_port=htons((unsigned short)(atoi(tcpport)));
 
             /* conexao TCP */
 
