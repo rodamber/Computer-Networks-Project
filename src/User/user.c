@@ -50,7 +50,6 @@ int main(int argc, char **argv){
     char topic[30];
     char msg[30]="";
     char qid[25];
-    char answers[5][5];
     char qid_prov[1];
 
     /*usados no aqs*/
@@ -113,7 +112,7 @@ int main(int argc, char **argv){
             if(argc==4){
                 strcpy(ecpport,"58009");
             }
-      if(argc==5){
+            if(argc==5){
                 fprintf(stderr, "error: insert ECPport\n");
                 return 0;
             }
@@ -175,7 +174,7 @@ int main(int argc, char **argv){
 
             n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
             if(n1==-1){
-          perror("error: ");
+                perror("error: ");
                 exit(1);
             }
 
@@ -216,7 +215,7 @@ int main(int argc, char **argv){
 
         }
 
-        if (strcmp(command,"request")==0){
+        if (strcmp(command,"request")==0) {
 
             /* le numero do topico */
 
@@ -234,7 +233,7 @@ int main(int argc, char **argv){
 
             n1=recvfrom(udp,buffer_udp,sizeof(buffer_udp),0,(struct sockaddr*)&serveraddr_udp,&addrlen_udp);
             if(n1==-1){
-          perror("error: ");
+                perror("error: ");
                 exit(1);
             }
             token1=strtok(buffer_udp," ");
@@ -369,13 +368,13 @@ int main(int argc, char **argv){
                 n_bytes_written = write(file, pdf_conteud, sizeof(pdf_conteud));
 
                 if(n_bytes_written != sizeof(pdf_conteud) || close(file) == -1) {
-                    return -1;
+                    exit(1);
                 }
                 n1++;
             }
 
             if(close(file) == -1)
-                return -1;
+                exit(1);
 
             printf("PDF transfered\n");
 
@@ -390,21 +389,20 @@ int main(int argc, char **argv){
             }
             flag = 0;
         }
-
-
-
-        if (strcmp(command,"submit")==0){
+        else if (strcmp(command,"submit")==0){
 
             /* receber respostas do utilizador */
 
-            n=0;
-            while(n<5){
-                scanf("%s",answers[n]);
-                if((strcmp(answers[n],"A")!=0)&&(strcmp(answers[n],"B")!=0)&&(strcmp(answers[n],"C")!=0)&&(strcmp(answers[n],"D")!=0))
-                    fprintf(stderr, "error: answer must be A, B, C or D\n");
-                if(strcmp(answers[n],"")==0)
-                    strcpy(answers[n],"N");
-                n++;
+            char buffer[11];
+            if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+                perror("error: ");
+                exit(1);
+            }
+
+            char *answers[5];
+            answers[0] = strtok(buffer, " ");
+            for (int i = 1; i < 5; ++i) {
+                answers[i] = strtok(NULL, " ");
             }
 
             if(n>5){
@@ -417,7 +415,8 @@ int main(int argc, char **argv){
             strcpy(msg,"");
             strcat(msg,"RQS ");
             strcat(msg,sid);
-            strcat(msg," ");
+            /* strcat(msg," "); */
+
             strcat(msg,qid);
             n=0;
             while(n<5){
@@ -491,10 +490,10 @@ int main(int argc, char **argv){
 
         }
 
-  if (strcmp(command,"exit")==0)
-     flag=0;
+        if (strcmp(command,"exit")==0)
+            flag=0;
 
-  if (flag)
+        if (flag)
             fprintf(stderr, "error: unknown command\n");
 
     }while(strcmp(command,"exit")!=0);
