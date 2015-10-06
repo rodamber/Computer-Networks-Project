@@ -24,9 +24,6 @@
 #define DEBUG_PRINT(fmt, ...)                                       \
     do { if (DEBUG_TEST) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
 
-
-
-
 #define QID_SIZE 24
 #define SID_SIZE 5
 
@@ -45,18 +42,17 @@ int valid_sid(const char * sid) {
     return 1;
 }
 
+
+
 int main(int argc, char *argv[]) {
 
-    /* Parse command line arguments */
-    int option;
-
+    // -----------------------------------------------------------------------------
+    // Parse command line arguments
     char * sid = argv[1];
     if (sid == NULL) {
         printf("Must enter SID\n");
         return -1;
     }
-
-    /* strtok(sid, "\n"); // Strip newline. */
 
     if (!valid_sid(sid)) {
     DEBUG_PRINT("SID: %s\n", sid);
@@ -69,6 +65,7 @@ int main(int argc, char *argv[]) {
     char * ECPname = "localhost";
     int    ECPport = DEFAULT_UDP_PORT;
 
+    int option;
     optind = 2;
     while((option = getopt(argc, argv, "n:p:")) != -1) {
         if(option == 'n') {
@@ -82,7 +79,34 @@ int main(int argc, char *argv[]) {
     }
 
     DEBUG_PRINT("ECPname: %s\n", ECPname);
-    DEBUG_PRINT("ECPport: %d\n", ECPport);
+    DEBUG_PRINT("ECPport: %d\n\n", ECPport);
+
+    // -----------------------------------------------------------------------------
+    // Parse user commands.
+
+    /* open the connection here */
+
+
+    while (1) {
+        printf("Please, enter a command\n");
+        printf("> ");
+
+        char * command = calloc(sizeof(char), 1);
+        int command_cap = 1;
+        int command_size;
+
+        if ((command_size = getline(&command, (size_t *) &command_cap, stdin)) == -1) {
+            perror("Error: ");
+            return -1;
+        }
+        DEBUG_PRINT("\nCommand entered: %sCommand size: %d\n", command, command_cap);
+
+        if (strncmp(command, "exit", 4) == 0) {
+            free(command);
+            break;
+        }
+    }
+
 
     if (ECPname != NULL) {
         /* free(ECPname); */
