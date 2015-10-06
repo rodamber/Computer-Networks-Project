@@ -24,13 +24,14 @@
 #define DEBUG_PRINT(fmt, ...)                                       \
     do { if (DEBUG_TEST) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
 
+#define ABORT do { perror("Error: "); return -1; } while (0)
+
 #define QID_SIZE 24
 #define SID_SIZE 5
 
 #define DEFAULT_UDP_PORT 58009
 #define DEFAULT_TCP_PORT 59000
 
-#define ABORT do { perror("Error: "); return -1; } while (0)
 
 int valid_sid(const char * sid) {
     if (strlen(sid) != SID_SIZE) {
@@ -85,8 +86,6 @@ int main(int argc, char *argv[]) {
     // -----------------------------------------------------------------------------
     // Parse user commands.
 
-    /* open the connection here */
-
     int ecp_socket;
     if((ecp_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1) ABORT;
 
@@ -97,19 +96,17 @@ int main(int argc, char *argv[]) {
 
     DEBUG_PRINT("ecp: %s\n\n", ecp->h_name);
 
-
     struct sockaddr_in ecp_address = {
         .sin_family      = AF_INET,
         .sin_addr.s_addr = ((struct in_addr *) (ecp->h_addr_list[0]))->s_addr,
         .sin_port        = htons((unsigned short) ECPport)
     };
 
-
     while (1) {
         printf("Please, enter a command\n");
         printf("> ");
 
-        char * command = calloc(sizeof(char), 1);
+        char * command  = calloc(sizeof(char), 1);
         int command_cap = 1;
         int command_size;
 
@@ -117,12 +114,24 @@ int main(int argc, char *argv[]) {
             perror("Error: ");
             return -1;
         }
-        DEBUG_PRINT("\nCommand entered: %sCommand size: %d\n", command, command_cap);
+        command[command_size] = '\0';
+        DEBUG_PRINT("\nCommand entered: %sCommand size: %d\n", command, command_size);
 
         /* reply to the other commands here */
+        struct msg * command_msg = new_msg(command);
+        free(command);
 
-        if (strncmp(command, "exit", 4) == 0) {
-            free(command);
+        #ifdef DEBUG
+        char * command_str_debug = msg_to_string(command_msg);
+        DEBUG_PRINT("Command parsed: %s\n", command_str_debug);
+        free(command_str_debug);
+        #endif
+
+        if (strncmp(command_msg->type, "list", 4) == 0) {
+            /* send request to ECP */
+
+        } else if (strncmp(command_msg->type, "exit", 4) == 0) {
+            free_msg(command_msg);
             break;
         }
     }
