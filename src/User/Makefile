@@ -1,10 +1,26 @@
+CCFLAGS=-Wall -Wextra -pedantic -g
+CC=gcc
+
+EXEC=user
+SOURCES=$(wildcard *.c) ../utils.c
+OBJECTS=$(SOURCES:.c=.o)
+HEADERS=$(SOURCES:.c=.h)
+
+all: $(EXEC)
+
 run: all
-	./user
+	./$(EXEC)
 
-all: user
+$(EXEC): $(OBJECTS)
+	$(CC) $(CCFLAGS) $(OBJECTS) -o $(EXEC)
 
-user: user.c ../utils.c
-	gcc -g -std=c99 -o $@ $^ 
+-include $(OBJECTS:.o=.d)
+
+%.o: %.c
+	$(CC) -MMD -c $(CCFLAGS) -o $@ $<
 
 clean:
-	rm -f user
+	rm -f $(EXEC) $(OBJECTS)
+
+cleand:
+	rm -f *.d

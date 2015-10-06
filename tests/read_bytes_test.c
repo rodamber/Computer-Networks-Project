@@ -5,6 +5,7 @@
 #include <fcntl.h> // open
 
 #include "../src/utils.h"
+#include "test_utils.h"
 
 void test_read_bytes() {
     const int file = open("./read_bytes_test.txt", O_RDONLY);
@@ -15,11 +16,11 @@ void test_read_bytes() {
 
     assert(read_bytes(file, -1, buffer) == -1);
 
-    assert(read_bytes(file, bytes, buffer) == 0);
+    assert(read_bytes(file, bytes, buffer) == 10);
     buffer[bytes] = 0;
     assert(strcmp(buffer, "\"It's no u") == 0);
 
-    assert(read_bytes(file, bytes, buffer + bytes) == 0);
+    assert(read_bytes(file, bytes, buffer + bytes) == 10);
     buffer[2 * bytes] = 0;
     assert(strcmp(buffer, "\"It's no use going b") == 0);
 

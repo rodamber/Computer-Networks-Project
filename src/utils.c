@@ -37,20 +37,22 @@ const struct msg error_msg = { .type = "ERR\n" };
 
 struct msg * new_msg(const char * const str) {
     struct msg * m = msgdup(&error_msg);
+    free(m->type);
 
     char *string = strdup(str);
     char *token;
 
-    if ((token = strsep(&string, " ")) != NULL) {
-        m->type = token;
+    if ((token = strsep(&string, " \n")) != NULL) {
+        m->type = strdup(token);
     }
 
     int i = 0;
-    while ((token = strsep(&string, " ")) != NULL) {
-        m->parameters[i++] = token;
+    while ((token = strsep(&string, " \n")) != NULL && strcmp(token, "") != 0) {
+        m->parameters[i++] = strdup(token);
     }
     m->n_parameters = i;
 
+    free(string);
     return m;
 }
 

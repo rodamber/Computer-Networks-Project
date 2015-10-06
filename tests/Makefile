@@ -6,6 +6,11 @@ SOURCES = $(wildcard *.c) ../src/utils.c
 OBJECTS = $(SOURCES:.c=.o)
 HEADERS = ../src/utils.h
 
+all: $(EXEC)
+
+run: all
+	./$(EXEC)
+
 $(EXEC): $(OBJECTS) $(HEADERS)
 	$(CC) ${CCFLAGS} $(OBJECTS) -o $(EXEC)
 

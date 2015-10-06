@@ -6,8 +6,7 @@
 #include "../src/utils.h"
 #include "test_utils.h"
 
-void test_template(char *type, char **parameters, int n_parameters,
-                   char *str_to_match) {
+void test_template(char *type, char **parameters, int n_parameters, char *str_to_match) {
     const struct msg test_msg = {
         .type = type,
         .parameters = parameters,
