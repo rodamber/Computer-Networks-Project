@@ -51,6 +51,7 @@ int main(int argc, char *argv[]) {
 
     // -----------------------------------------------------------------------------
     // Parse command line arguments
+
     char * sid = argv[1];
 
     if (sid == NULL) {
@@ -84,7 +85,7 @@ int main(int argc, char *argv[]) {
     DEBUG_PRINT("ECPport: %d\n\n", ECPport);
 
     // -----------------------------------------------------------------------------
-    // Parse user commands.
+    // Socket initialization.
 
     int ecp_socket;
     if((ecp_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1) ABORT;
@@ -101,6 +102,9 @@ int main(int argc, char *argv[]) {
         .sin_addr.s_addr = ((struct in_addr *) (ecp->h_addr_list[0]))->s_addr,
         .sin_port        = htons((unsigned short) ECPport)
     };
+
+    // -----------------------------------------------------------------------------
+    // User interaction.
 
     while (1) {
         printf("Please, enter a command\n");
@@ -136,6 +140,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
+
+    // -----------------------------------------------------------------------------
+    // Cleanup.
 
     if (ECPname != NULL) {
         /* free(ECPname); */
