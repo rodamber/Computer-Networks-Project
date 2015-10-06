@@ -1,4 +1,4 @@
-#include "ecp_utils.h"
+#include "ecp.h"
 
 void TQR_command(char* awtString){
 	FILE *fp;

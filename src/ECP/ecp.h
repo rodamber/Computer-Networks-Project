@@ -1,5 +1,5 @@
-#ifndef __ECP_UTILS_H__
-#define __ECP_UTILS_H__
+#ifndef __ECP_H__
+#define __ECP_H__
 
 #define GN 9
 #define ECP_PORT 58000
@@ -26,4 +26,4 @@ void TER_command(char* awtesString, int topicID);
 void IQR_command(char* buffer, char* awiString);
 void printRequest(char* request, struct sockaddr_in* clientaddr);
 
-#endif // __ECP_UTILS_H__
+#endif // __ECP_H__
