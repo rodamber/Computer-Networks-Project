@@ -1,5 +1,8 @@
 EXEC=TES
 
+run: all
+	./$(EXEC)
+
 all: $(EXEC)
 
 $(EXEC): *.py
