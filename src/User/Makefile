@@ -1,28 +1,16 @@
-CCFLAGS=-Wall -Wextra -pedantic -g
-CC=gcc
-
-DEBUG_FLAGS=-D 'DEBUG=1'
-
 EXEC=user
-SOURCES=$(wildcard *.c) ../utils.c
-OBJECTS=$(SOURCES:.c=.o)
-HEADERS=$(SOURCES:.c=.h)
 
 all: $(EXEC)
 
 run: all
-	./$(EXEC) 78942
+	./$(EXEC) 12345
 
-$(EXEC): $(OBJECTS)
-	$(CC) $(CCFLAGS) $(DEBUG_FLAGS) $(OBJECTS) -o $(EXEC)
-
--include $(OBJECTS:.o=.d)
-
-%.o: %.c
-	$(CC) -MMD -c $(CCFLAGS) -o $@ $<
+$(EXEC): *.py
+	zip -r $(EXEC).zip $^
+	echo '#!/usr/bin/env python3' | cat - $(EXEC).zip > $(EXEC)
+	rm $(EXEC).zip
+	chmod +x $(EXEC)
 
 clean:
-	rm -f $(EXEC) $(OBJECTS)
-
-cleand:
-	rm -f *.d
+	rm -f $(EXEC)
+	rm -rf __pycache__

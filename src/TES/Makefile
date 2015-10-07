@@ -13,3 +13,4 @@ $(EXEC): *.py
 
 clean:
 	rm -f $(EXEC)
+	rm -rf __pycache__
