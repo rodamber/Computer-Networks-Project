@@ -46,6 +46,28 @@ int valid_sid(const char * sid) {
 }
 
 
+struct msg * getlist(int udp_socket, struct sockaddr * udp_address,
+                     socklen_t addrlen) {
+    if (sendto(udp_socket, "TQR\n", 4, 0,  udp_address, addrlen) == -1) {
+        perror("Error: ");
+        return msgdup(&error_msg);
+    }
+
+#define BUF_SZ 256
+    char buf[BUF_SZ];
+    if (recvfrom(udp_socket, buf, BUF_SZ, 0, udp_address, &addrlen) == -1) {
+        printf("ERR\n");
+        perror("Error: ");
+        return msgdup(&error_msg);
+    }
+
+    DEBUG_PRINT("AWT command: %s\n", buf);
+
+    return new_msg(buf);
+
+#undef BUF_SZ
+}
+
 
 int main(int argc, char *argv[]) {
 
@@ -87,13 +109,13 @@ int main(int argc, char *argv[]) {
     // -----------------------------------------------------------------------------
     // Socket initialization.
 
-    int ecp_socket;
-    if((ecp_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1) ABORT;
+    const int ecp_socket = socket(AF_INET, SOCK_DGRAM, 0);
+    if(ecp_socket == -1) ABORT;
 
     DEBUG_PRINT("ECP socket file descriptor: %d\n", ecp_socket);
 
-    struct hostent * ecp;
-    if ((ecp = gethostbyname(ECPname)) == NULL) ABORT;
+    const struct hostent * ecp = gethostbyname(ECPname);
+    if (ecp == NULL) ABORT;
 
     DEBUG_PRINT("ecp: %s\n\n", ecp->h_name);
 
@@ -102,12 +124,14 @@ int main(int argc, char *argv[]) {
         .sin_addr.s_addr = ((struct in_addr *) (ecp->h_addr_list[0]))->s_addr,
         .sin_port        = htons((unsigned short) ECPport)
     };
+    socklen_t ecp_addrlen = sizeof(ecp_address);
+
 
     // -----------------------------------------------------------------------------
     // User interaction.
 
     while (1) {
-        printf("Please, enter a command\n");
+        printf("\nPlease, enter a command\n");
         printf("> ");
 
         char * command  = calloc(sizeof(char), 1);
@@ -121,9 +145,9 @@ int main(int argc, char *argv[]) {
         command[command_size] = '\0';
         DEBUG_PRINT("\nCommand entered: %sCommand size: %d\n", command, command_size);
 
-        /* reply to the other commands here */
         struct msg * command_msg = new_msg(command);
         free(command);
+
 
         #ifdef DEBUG
         char * command_str_debug = msg_to_string(command_msg);
@@ -131,12 +155,33 @@ int main(int argc, char *argv[]) {
         free(command_str_debug);
         #endif
 
-        if (strncmp(command_msg->type, "list", 4) == 0) {
-            /* send request to ECP */
 
-        } else if (strncmp(command_msg->type, "exit", 4) == 0) {
+        if (strncmp(command_msg->type, "list", 4) == 0) { // List command.
+            struct msg * list_msg = getlist(ecp_socket,
+                                            (struct sockaddr*) &ecp_address,
+                                            ecp_addrlen);
+
+
+            /* #ifdef DEBUG */
+            /* char * list_str_debug = msg_to_string(list_msg); */
+            /* DEBUG_PRINT("Command parsed: %s\n", list_str_debug); */
+            /* free(list_str_debug); */
+            /* #endif */
+
+
+            // Print numbered list.
+
+            /* const int topics_number = atoi(list_msg->parameters[0]); */
+            /* for (int i = 1; i <= topics_number; ++i) { */
+            /*     printf("%d - %s\n", i, list_msg->parameters[i]); */
+            /* } */
+
+            free_msg(list_msg);
+        } else if (strncmp(command_msg->type, "exit", 4) == 0) { // Exit command.
             free_msg(command_msg);
             break;
+        } else {
+            printf("Unknown command\n");
         }
     }
 
