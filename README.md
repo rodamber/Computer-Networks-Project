@@ -1,13 +1,15 @@
-Projecto de Redes de Computadores
-=================================
+# Projecto de Redes de Computadores
 
-Importante
-------------
-1. Usem const sempre que puderem.
-2. Verifiquem sempre os retornos das funcoes.
-3. Tal como o stor disse nas praticas, as aplicacoes (principalmente os
-   servidores) nao podem crashar!
+## Ano lectivo 2015/2016 1o Semestre
+### Grupo 9
 
-Estilo de codigo
-------------------
-1. Nao usem tabs. Identem com 4 espacos.
+78606  Mariana Sofia Santos Castel-Branco Ribeiro
+78942  Rodrigo André Moreira Bernardo
+78595  Nuno Encantado Faria
+
+## Compiling
+
+```shell
+cd .
+make
+```

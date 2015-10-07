@@ -2,7 +2,7 @@ CCFLAGS=-Wall -Wextra -pedantic -g
 CC=gcc
 
 EXEC=ECP
-SOURCES=$(wildcard *.c) ../utils.c
+SOURCES=$(wildcard *.c)
 OBJECTS=$(SOURCES:.c=.o)
 HEADERS=$(SOURCES:.c=.h)
 
@@ -22,5 +22,5 @@ $(EXEC): $(OBJECTS)
 clean:
 	rm -f $(EXEC) $(OBJECTS)
 
-cleand:
+cleand: clean
 	rm -f *.d
