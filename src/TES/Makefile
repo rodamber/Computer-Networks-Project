@@ -1,9 +1,9 @@
 EXEC=TES
 
+all: $(EXEC)
+
 run: all
 	./$(EXEC)
-
-all: $(EXEC)
 
 $(EXEC): *.py
 	zip -r $(EXEC).zip $^

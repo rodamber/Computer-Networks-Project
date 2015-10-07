@@ -5,11 +5,8 @@ import contextlib
 import os
 import socket
 import sys
-import traceback
 
 import handle
-
-
 
 @contextlib.contextmanager
 def accept(sock):
@@ -59,7 +56,7 @@ def main():
     args = parser.parse_args()
     if args.p and valid_port(args.p):
         TESport = args.p
-    if args.n != ECPname:
+    if args.n and args.n != ECPname:
         ECPname = args.n
     if args.e and valid_port(args.e):
         ECPport = args.e
@@ -74,6 +71,7 @@ def main():
                 with accept(server) as (conn, (ip, port)):
                     conn.settimeout(5.0)
                     print("Accepted {}:{}".format(ip, port))
+
                     try:
                         pid = os.fork()
                         if pid == 0:
@@ -82,16 +80,13 @@ def main():
                             reply = handle.handle(request, deadline, topic_name, ECPname, ECPport)
                             conn.sendall(reply)
                     except Exception as e:
-                        traceback.print_exc()
                         print("Connection error: {}:{} : {}".format(ip, port, str(e)))
                         conn.sendall(error)
                     finally:
                         if pid == 0:
                             sys.exit(0)
             except Exception as e:
-                traceback.print_exc()
                 print("Failed to accept connection", str(e))
-
 
 
 if __name__ == '__main__':

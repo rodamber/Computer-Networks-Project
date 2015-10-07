@@ -21,8 +21,8 @@ def ecp_query(ip, port, query):
                 sock.sendto(bytes(query + '\n', 'ascii'), (ip, port))
                 data = sock.makefile().readline().strip().split()
                 received = True
-            except Exception as e:
-                print('An error has ocurred:', str(e))
+            except socket.timeout as e:
+                print(str(e))
 
                 attempt += 1
                 if attempt > max_no_of_attempts:
@@ -54,29 +54,51 @@ def fetch_pdf(ip, port, sid):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.settimeout(5.0)
 
-        try:
-            sock.connect((ip, port))
-            sock.sendall(bytes('RQT ' + sid + '\n', 'ascii'))
-            reply, qid, deadline = sock.recv(3 + 1 + 24 + 1 + 18).split()
+        sock.connect((ip, port))
+        sock.sendall(bytes('RQT ' + sid + '\n', 'ascii'))
+        reply, qid, deadline = sock.recv(3 + 1 + 24 + 1 + 18).split()
 
-            if reply != b'AQT':
-                raise ValueError('Invalid reply from server')
+        if reply == 'ERR':
+            raise ValueError('Bad query')
+        elif reply != b'AQT':
+            raise ValueError('Invalid answer from server: ' + reply)
 
-            received = sock.recv(64).strip().split(b' ', 1)
-            size     = int(received[0])
+        received = sock.recv(64).strip().split(b' ', 1)
+        size     = int(received[0])
 
-            with open(qid.decode('ascii') + '.pdf', 'ab+') as quiz:
-                if len(received) > 1:
-                    quiz.write(received[1])
-                    size -= len(received[1])
+        with open(qid.decode('ascii') + '.pdf', 'ab+') as quiz:
+            if len(received) > 1:
+                quiz.write(received[1])
+                size -= len(received[1])
 
-                while size > 0:
-                    data = sock.recv(4096)
-                    quiz.write(data)
-                    size -= len(data)
-        except Exception as e:
-            print('An error has ocurred:', str(e))
+            while size > 0:
+                data = sock.recv(4096)
+                quiz.write(data)
+                size -= len(data)
+        return qid
 
+def send_answers(ip, port, sid, qid, answers):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(5.0)
+
+        sock.connect((ip, port))
+        sock.sendall(bytes('RQS ' + sid + ' ' + qid + ' ' + ' '.join(answers) + '\n', 'ascii'))
+        reply = sock.makefile().readline().strip()
+
+        print('RQS ' + sid + ' ' + qid + ' ' + ' '.join(answers) + '\n')
+
+        if reply == '-1':
+            return reply
+        elif reply == '-2':
+            raise ValueError('Wrong pair SID-QID')
+        elif reply == 'ERR':
+            raise ValueError('Bad query')
+        elif reply[:3] != 'AQS' or len(reply.split()) < 3:
+            print('Reply:', reply)
+            raise ValueError('Invalid reply from server')
+
+        score = reply.split()[2]
+        return score
 
 def main():
     parser = argparse.ArgumentParser()
@@ -98,19 +120,34 @@ def main():
 
     ECPip = socket.gethostbyname(ECPname);
 
-    while True:
-        command = input("Please enter a command: ").strip().split()
+    # 'Undefined' variables
+    TESip   = -1
+    TESport = -1
+    qid     = ''
 
-        if command == ['list']:
-            topic_list = fetch_topics(ECPip, ECPport)
-            for i, t in enumerate(topic_list):
-                print('{}. {}'.format(str(i+1), t))
-        elif command[0] == 'request' and len(command) > 1:
-            TESip, TESport = mkrequest(ECPip, ECPport, command[1])
-            TESport = int(TESport)
-            fetch_pdf(TESip, TESport, sid)
-        elif command == ['exit']:
-            break
-        else:
-            print("Unknown command")
+    while True:
+        try:
+            command = input("Please enter a command: ").strip().split()
+            if command == ['list']:
+                topic_list = fetch_topics(ECPip, ECPport)
+                for i, t in enumerate(topic_list):
+                    print('{}. {}'.format(str(i+1), t))
+            elif command[0] == 'request' and len(command) > 1:
+                TESip, TESport = mkrequest(ECPip, ECPport, command[1])
+                TESport        = int(TESport)
+                qid            = fetch_pdf(TESip, TESport, sid).decode('ascii')
+            elif command[0] == 'submit':
+                if len(command[1:]) < 5:
+                    print("Insuficient number of answers")
+                elif TESip == -1 or TESport == -1 or qid == '':
+                    print('Must first make a topic request')
+                else:
+                    score = send_answers(TESip, TESport, sid, qid, command[1:])
+                    print(score)
+            elif command == ['exit']:
+                break
+            else:
+                print("Unknown command")
+        except Exception as e:
+            print('An error has occured:', str(e))
 

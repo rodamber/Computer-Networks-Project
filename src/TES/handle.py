@@ -9,7 +9,7 @@ import traceback
 
 
 months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
-error  = bytes('ERR\n', 'utf-8')
+error  = bytes('ERR\n', 'ascii')
 
 
 def valid_sid(sid):
@@ -32,8 +32,6 @@ def check_pair(sid, qid):
 
 
 def check_answers(answers, quiz, deadline):
-    answers = answers.split()
-
     quizno = int(quiz[5:8])
     correct_answers = ""
 
@@ -66,25 +64,25 @@ def send_score_to_ECP(sid, qid, topic_name, score, hostname, port):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as client:
         client.settimeout(5.0)
 
-        iqr = bytes('IQR' + sid + qid + topic_name + score + '\n', 'utf-8')
+        iqr = bytes('IQR ' + ' ' + sid + ' ' + qid + ' ' + topic_name + ' ' + score + '\n', 'ascii')
         tries = 5
 
         while tries > 0:
             try:
                 client.sendto(iqr, (ip, port))
-                reply = client.makefile().readfile()
+                reply = client.makefile().readline()
                 print(reply)
 
                 if len(reply) == 28 and reply[0:4] == 'AWI ' and reply[4:28] == qid:
                     break
                 else:
                     tries -= 1
-            except Exception as e:
+            except socket.timeout as e:
                 traceback.print_exc()
-                print('Error comunicating with ECP: {}'.format(str(e)))
+                print(repr(e))
 
         if tries > 0:
-            return bytes(score, 'utf-8')
+            return bytes(score, 'ascii')
         else:
             return error
 
@@ -129,12 +127,12 @@ def handle_rqt(request, deadline):
     with open(quiz, 'rb') as q:
         return bytes("AQT " + str(qid)  + ' '           \
                             + deadline  + ' '           \
-                            + str(size) + ' ', 'utf-8') \
+                            + str(size) + ' ', 'ascii') \
              + bytes(q.read())                          \
-             + bytes('\n', 'utf-8')
+             + bytes('\n', 'ascii')
 
 
-def handle_rqs(request, topic_name, ecp_name, ecp_port):
+def handle_rqs(request, deadline, topic_name, ecp_name, ecp_port):
 
     def check_parameters(request):
         params = request.split()
@@ -164,17 +162,17 @@ def handle_rqs(request, topic_name, ecp_name, ecp_port):
         return "-2\n"
 
     print("Checking answers...")
-    score = str(check_answers(answers, deadline)) + '%'
+    score = str(check_answers(answers, quiz, deadline)) + '%'
     print("Scored " + score)
 
-    return send_score_to_ECP(sid, qid, score, ecp_name, ecp_port)
+    return send_score_to_ECP(sid, qid, topic_name, score, ecp_name, ecp_port).decode('ascii')
 
 
 def handle(request, deadline, topic_name, ecp_name, ecp_port):
     if request[:3] == "RQT":
         return handle_rqt(request, deadline)
     elif request[:3] == "RQS":
-        return handle_rqs(request, topic_name, ecp_name, ecp_port)
+        return handle_rqs(request, deadline, topic_name, ecp_name, ecp_port)
     else:
         return error
 
