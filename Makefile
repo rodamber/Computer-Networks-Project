@@ -1,4 +1,4 @@
-bundle:
+all:
 	(cd src/ECP;  make all; cp {ECP,stats.txt,topics.txt} ../..)
 	(cd src/TES;  make all; cp {TES,*.txt,*.pdf}          ../..)
 	(cd src/User; make all; cp user                       ../..)

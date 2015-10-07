@@ -6,8 +6,6 @@ import socket
 import time
 import traceback
 
-
-
 months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
 error  = bytes('ERR\n', 'ascii')
 
@@ -65,9 +63,9 @@ def send_score_to_ECP(sid, qid, topic_name, score, hostname, port):
         client.settimeout(5.0)
 
         iqr = bytes('IQR ' + ' ' + sid + ' ' + qid + ' ' + topic_name + ' ' + score + '\n', 'ascii')
-        tries = 5
+        tries = 3
 
-        while tries > 0:
+        while True:
             try:
                 client.sendto(iqr, (ip, port))
                 reply = client.makefile().readline()
@@ -79,7 +77,13 @@ def send_score_to_ECP(sid, qid, topic_name, score, hostname, port):
                     tries -= 1
             except socket.timeout as e:
                 traceback.print_exc()
-                print(repr(e))
+                print("Failed communication with ECP:", str(e))
+                if tries > 0:
+                    print('Trying again...')
+                    tries -= 1
+                else:
+                    print('Aborting.')
+                    break
 
         if tries > 0:
             return bytes(score, 'ascii')
@@ -112,7 +116,7 @@ def handle_rqt(request, deadline):
 
     size = 0
     while (size == 0):
-        quiz = random.choice([f for f in os.listdir('.') if f.endswith(".pdf")])
+        quiz = random.choice([f for f in os.listdir('.') if f.startswith('T') and f.endswith(".pdf")])
         size = os.stat(quiz).st_size
 
     print("Saving transaction...")

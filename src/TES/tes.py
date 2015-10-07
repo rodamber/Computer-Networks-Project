@@ -5,6 +5,7 @@ import contextlib
 import os
 import socket
 import sys
+import traceback
 
 import handle
 
@@ -67,26 +68,28 @@ def main():
         server.listen(10)
         print("Server bound on port {}".format(TESport))
         while True:
-            try:
-                with accept(server) as (conn, (ip, port)):
+            with accept(server) as (conn, (ip, port)):
+                try:
                     conn.settimeout(5.0)
                     print("Accepted {}:{}".format(ip, port))
-
-                    try:
-                        pid = os.fork()
-                        if pid == 0:
-                            request = conn.makefile().readline()
-                            print(request)
-                            reply = handle.handle(request, deadline, topic_name, ECPname, ECPport)
-                            conn.sendall(reply)
-                    except Exception as e:
-                        print("Connection error: {}:{} : {}".format(ip, port, str(e)))
-                        conn.sendall(error)
-                    finally:
-                        if pid == 0:
-                            sys.exit(0)
-            except Exception as e:
-                print("Failed to accept connection", str(e))
+                except socket.timeout as e:
+                    traceback.print_exc()
+                    print("Failed to accept connection:", str(e))
+                    continue
+                try:
+                    pid = os.fork()
+                    if pid == 0:
+                        request = conn.makefile().readline()
+                        print(request)
+                        reply = handle.handle(request, deadline, topic_name, ECPname, ECPport)
+                        conn.sendall(reply)
+                except os.OSError as e:
+                    traceback.print_exc()
+                    print("Error: {}:{} : {}".format(ip, port, str(e)))
+                    conn.sendall(error)
+                finally:
+                    if pid == 0:
+                        sys.exit(0)
 
 
 if __name__ == '__main__':
