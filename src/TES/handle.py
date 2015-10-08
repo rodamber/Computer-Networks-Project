@@ -53,7 +53,10 @@ def check_answers(answers, quiz, deadline):
             points -= 0.5
 
     # FIXME: Score should be -1 if answers submited after deadline
-    return math.ceil(100 * points / number_of_questions)
+    if points < 0:
+        return 0
+    else:
+        return math.ceil(100 * points / number_of_questions)
 
 
 def send_score_to_ECP(sid, qid, topic_name, score, hostname, port):
@@ -65,28 +68,23 @@ def send_score_to_ECP(sid, qid, topic_name, score, hostname, port):
         iqr = bytes('IQR ' + ' ' + sid + ' ' + qid + ' ' + topic_name + ' ' + score + '\n', 'ascii')
         tries = 3
 
-        while True:
+        while tries > 0:
             try:
+                tries -= 1
+
                 client.sendto(iqr, (ip, port))
                 reply = client.makefile().readline()
+
                 print(reply)
 
-                if len(reply) == 28 and reply[0:4] == 'AWI ' and reply[4:28] == qid:
+                if len(reply) == 29 and reply[:4] == 'AWI ' and reply[4:28] == qid:
                     break
-                else:
-                    tries -= 1
             except socket.timeout as e:
                 traceback.print_exc()
                 print("Failed communication with ECP:", str(e))
-                if tries > 0:
-                    print('Trying again...')
-                    tries -= 1
-                else:
-                    print('Aborting.')
-                    break
 
-        if tries > 0:
-            return bytes(score, 'ascii')
+        if tries >= 0:
+            return bytes('AQS ' + qid + ' ' + score + '\n', 'ascii')
         else:
             return error
 
@@ -126,7 +124,7 @@ def handle_rqt(request, deadline):
         f.write(sid + ' ' + qid + ' ' + quiz + '\n')
         fcntl.flock(f, fcntl.LOCK_EX)
 
-    print("Sending file...\n")
+    print("File sent\n")
 
     with open(quiz, 'rb') as q:
         return bytes("AQT " + str(qid)  + ' '           \
@@ -166,10 +164,10 @@ def handle_rqs(request, deadline, topic_name, ecp_name, ecp_port):
         return "-2\n"
 
     print("Checking answers...")
-    score = str(check_answers(answers, quiz, deadline)) + '%'
-    print("Scored " + score)
+    score = str(check_answers(answers, quiz, deadline))
+    print("Score: " + score + "%\n")
 
-    return send_score_to_ECP(sid, qid, topic_name, score, ecp_name, ecp_port).decode('ascii')
+    return send_score_to_ECP(sid, qid, topic_name, score, ecp_name, ecp_port)
 
 
 def handle(request, deadline, topic_name, ecp_name, ecp_port):

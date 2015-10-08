@@ -84,8 +84,6 @@ def send_answers(ip, port, sid, qid, answers):
         sock.sendall(bytes('RQS ' + sid + ' ' + qid + ' ' + ' '.join(answers) + '\n', 'ascii'))
         reply = sock.makefile().readline().strip()
 
-        print('RQS ' + sid + ' ' + qid + ' ' + ' '.join(answers) + '\n')
-
         if reply == '-1':
             return reply
         elif reply == '-2':

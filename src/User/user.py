@@ -47,7 +47,7 @@ def main():
                     print('Must first make a topic request')
                 else:
                     score = send_answers(TESip, TESport, sid, qid, command[1:])
-                    print(score)
+                    print('Score: ' + score + '%')
             elif command == ['exit']:
                 break
             else:
