@@ -72,7 +72,7 @@ void IQR_command(char* buffer, char* awiString){
         fprintf(stderr, "Error opening stats.txt\n");
         exit(EXIT_FAILURE);
     }
-    strncpy(substr, buffer+4, strlen(buffer)-3); // FIXME: -3 ou -4?
+    substr = strndup(buffer+4, strlen(buffer)-3); // FIXME: -3 ou -4?
     fprintf(fp, "%s", substr);
 
     strcpy(awiString, "AWI ");
@@ -82,6 +82,7 @@ void IQR_command(char* buffer, char* awiString){
     strcat(awiString, pch);
     strcat(awiString, "\n");
 
+    free(substr);
     fclose(fp);
 }
 
@@ -159,7 +160,7 @@ int main(int argc, char *argv[]){
         else if(strncmp(buffer, "IQR", 3) == 0){
             printRequest(buffer, &clientaddr);
             IQR_command(buffer, awiString);
-            ret = sendto(fd, awiString, strlen(awiString)+1, 0, (struct sockaddr*)&clientaddr, addrlen);
+            ret = sendto(fd, awiString, strlen(awiString), 0, (struct sockaddr*)&clientaddr, addrlen);
             if(ret==-1){
                 fprintf(stderr, "Error sending reply to user\n");
                 exit(EXIT_FAILURE);
