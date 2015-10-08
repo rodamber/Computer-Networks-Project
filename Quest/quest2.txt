@@ -1,13 +1,14 @@
-QUESTIONÁRIO 2
+﻿QUESTIONÁRIO 2
+
 Tema: Arquitectura de Redes
 
-1. 
-a) 
-b) 
-c) 
-d) 
+1. Qual é a maior vantagem da arquitectura de redes em camadas em relação à monolítica?
+a) É mais barato.
+b) Facilidade de manutenção e de alteração (evolução tecnológica). <<
+c) Requer menos hardware.
+d) Existir muito código repetido.
 
-2. Qual/quais deste/s modelo/s de arquitectura de redes é em camadas?
+2. Qual/quais deste/s modelo/s de arquitectura de redes é baseado em camadas?
 a) TCP/IP
 b) OSI
 c) Todas as anteriores. <<
