@@ -49,7 +49,6 @@ def after_deadline(deadline):
                                  day(deadline), hour(deadline),   \
                                  minute(deadline), second(deadline))
     return now > deadline
-           
 
 def check_answers(answers, quiz, deadline):
     if after_deadline(deadline):
@@ -70,9 +69,9 @@ def check_answers(answers, quiz, deadline):
 
     points = 0
     for answer, correct in zip(answers, correct_answers):
-        if answer == correct:
+        if answer.lower() == correct.lower():
             points += 1
-        elif answer == 'N':
+        elif answer.lower() == 'n':
             pass
         else:
             points -= 0.5
@@ -182,7 +181,7 @@ def handle_rqs(request, deadline, topic_name, ecp_name, ecp_port):
 
     if not checked:
         print("Error: SID and QID do not match")
-        return "-2\n"
+        return "-2"
 
     print("Checking answers...")
     score = str(check_answers(answers, quiz, deadline))
