@@ -1,4 +1,4 @@
-CCFLAGS=-Wall -Wextra -pedantic -g -std=c11
+CCFLAGS=-Wall -Wextra -pedantic -g -std=c11 -D_GNU_SOURCE
 CC=gcc
 
 EXEC=ECP

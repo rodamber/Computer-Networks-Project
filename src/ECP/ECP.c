@@ -72,7 +72,7 @@ void IQR_command(char* buffer, char* awiString){
         fprintf(stderr, "Error opening stats.txt\n");
         exit(EXIT_FAILURE);
     }
-    substr = strndup(buffer+4, strlen(buffer)-3); // FIXME: -3 ou -4?
+    substr = strndup(buffer+4, strlen(buffer)-3);
     fprintf(fp, "%s", substr);
 
     strcpy(awiString, "AWI ");
