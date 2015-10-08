@@ -1,3 +1,5 @@
+import calendar
+import datetime
 import fcntl
 import math
 import random
@@ -6,18 +8,15 @@ import socket
 import time
 import traceback
 
-months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
-error  = bytes('ERR\n', 'ascii')
-
+error = bytes('ERR\n', 'ascii')
 
 def valid_sid(sid):
     return sid.isdigit() and len(sid) == 5
 
-
 def date():
-    m = int(time.strftime("%m")) - 1 # Because lists are 0-indexed.
+    m = int(time.strftime("%m"))
+    months = {k: v for k,v in enumerate(calendar.month_abbr)}
     return time.strftime("%d") + months[m] + time.strftime("%Y_%H:%M:%S")
-
 
 def check_pair(sid, qid):
     with open("transactions.txt", 'r') as f:
@@ -28,8 +27,34 @@ def check_pair(sid, qid):
                 return (True, trio[2])
     return (False, "")
 
+def after_deadline(deadline):
+    def year(d):
+        return int(d[5:9])
+    def month(d):
+        days_of_the_month = {v: k for k,v in enumerate(calendar.month_abbr)}
+        return days_of_the_month[d[2:5]]
+    def day(d):
+        return int(d[:2])
+    def hour(d):
+        return int(d[10:12])
+    def minute(d):
+        return int(d[13:15])
+    def second(d):
+        return int(d[16:18])
+
+    now = date()
+    now = datetime.datetime(year(now), month(now), day(now), \
+                     hour(now), minute(now), second(now))
+    deadline = datetime.datetime(year(deadline), month(deadline), \
+                                 day(deadline), hour(deadline),   \
+                                 minute(deadline), second(deadline))
+    return now > deadline
+           
 
 def check_answers(answers, quiz, deadline):
+    if after_deadline(deadline):
+        return -1
+
     quizno = int(quiz[5:8])
     correct_answers = ""
 
@@ -52,12 +77,10 @@ def check_answers(answers, quiz, deadline):
         else:
             points -= 0.5
 
-    # FIXME: Score should be -1 if answers submited after deadline
     if points < 0:
         return 0
     else:
         return math.ceil(100 * points / number_of_questions)
-
 
 def send_score_to_ECP(sid, qid, topic_name, score, hostname, port):
     ip = socket.gethostbyname(hostname)
@@ -87,7 +110,6 @@ def send_score_to_ECP(sid, qid, topic_name, score, hostname, port):
             return bytes('AQS ' + qid + ' ' + score + '\n', 'ascii')
         else:
             return error
-
 
 def handle_rqt(request, deadline):
     print("Handling RQT request...")
@@ -133,7 +155,6 @@ def handle_rqt(request, deadline):
              + bytes(q.read())                          \
              + bytes('\n', 'ascii')
 
-
 def handle_rqs(request, deadline, topic_name, ecp_name, ecp_port):
 
     def check_parameters(request):
@@ -169,7 +190,6 @@ def handle_rqs(request, deadline, topic_name, ecp_name, ecp_port):
 
     return send_score_to_ECP(sid, qid, topic_name, score, ecp_name, ecp_port)
 
-
 def handle(request, deadline, topic_name, ecp_name, ecp_port):
     if request[:3] == "RQT":
         return handle_rqt(request, deadline)
@@ -177,4 +197,3 @@ def handle(request, deadline, topic_name, ecp_name, ecp_port):
         return handle_rqs(request, deadline, topic_name, ecp_name, ecp_port)
     else:
         return error
-
