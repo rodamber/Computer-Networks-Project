@@ -1,0 +1,32 @@
+QUESTIONÁRIO 2
+Tema: Arquitectura de Redes
+
+1. 
+a) 
+b) 
+c) 
+d) 
+
+2. Qual/quais deste/s modelo/s de arquitectura de redes é em camadas?
+a) TCP/IP
+b) OSI
+c) Todas as anteriores. <<
+d) Nenhuma das anteriores.
+
+3. Quais as camadas do modelo TCP/IP?
+a) Aplicação, Apresentação, Transporte, Rede, e Física.
+b) Aplicação, Transporte, Rede, Ligação de Dados, e Física. << 
+c) Apresentação, Sessão, Transporte, Ligação de Dados, e Física.
+d) Aplicação, Transporte, Sessão, Rede, e Física.
+
+4. No modelo TCP/IP, qual a camada em que se localiza o HTTP?
+a) Aplicação. <<
+b) Transporte.
+c) Rede.
+d) Ligação de dados.
+
+5. Qual das seguintes frases é verdadeira?
+a) O IP localiza-se na camada de Rede, e o Porto na camada de Transporte. <<
+b) O IP localiza-se na camada de Transporte, e o Porto na camada de Rede.
+c) O IP localiza-se na camada de Ligação de Dados, e o Porto na camada de Rede.
+d) O IP localiza-se na camada de Rede, e o Porto na camada de Ligação de Dados.

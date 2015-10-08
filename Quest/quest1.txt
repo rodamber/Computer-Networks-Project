@@ -1,0 +1,23 @@
+QUESTIONÁRIO 1
+
+Tema: Protocolos
+
+1. O que é um protocolo?
+a) Conjunto de primitivas da API de sockets.
+b) 
+c) Especifica o tipo e formato dos pacotes trocados entre entidades ao mesmo nível em máquinas distintas que comunicam entre si.
+d) Especifica o tipo e formato das mensagens trocadas entre entidades ao mesmo nível em máquinas distintas que comunicam entre si.
+
+2. Qual dos seguintes não é um tipo de protocolo?
+a) UDP
+b) HTML
+c) TCP
+d) FTP
+
+3. Qual a porta por definição para transferência de dados do protocolo FTP?
+a) 20
+b) 21
+c) 40
+d) 80
+
+4. 

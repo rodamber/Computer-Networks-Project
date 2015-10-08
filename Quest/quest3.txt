@@ -1,0 +1,9 @@
+QUESTIONÁRIO 3
+
+Tema: Camada de Transporte
+
+1. A camada de transporte é responsável por...?
+a) Estabelecer uma comunicação regrada entre processos executados em máquinas distintas. <<
+b) 
+c)
+d)
