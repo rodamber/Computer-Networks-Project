@@ -69,6 +69,7 @@ def check_answers(answers, quiz, deadline):
 
     points = 0
     for answer, correct in zip(answers, correct_answers):
+        print('A: {}, C: {}'.format(answer,correct))
         if answer.lower() == correct.lower():
             points += 1
         elif answer.lower() == 'n':

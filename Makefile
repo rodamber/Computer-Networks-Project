@@ -1,7 +1,12 @@
 all:
 	(cd src/ECP;  make all; cp ECP stats.txt topics.txt ../..)
-	(cd src/TES;  make all; cp TES *.txt *.pdf *.py     ../..)
+	(cd src/TES;  make all; cp TES startup.txt T01*.txt T01*.pdf *.py     ../..)
 	(cd src/User; make all; cp user *.py                ../..)
+
+run: all
+	./TES &
+	./ECP &
+	./user 12345
 
 zip: clean
 	zip proj_9.zip -r *

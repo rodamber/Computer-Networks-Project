@@ -35,7 +35,7 @@ def main():
             if command == ['list']:
                 topic_list = fetch_topics(ECPip, ECPport)
                 for i, t in enumerate(topic_list):
-                    print('{}. {}'.format(str(i+1), t))
+                    print('{}. {}'.format(str(i+1), t.replace('_',' ')))
             elif command[0] == 'request' and len(command) > 1:
                 TESip, TESport = mkrequest(ECPip, ECPport, command[1])
                 TESport        = int(TESport)
