@@ -1,0 +1,33 @@
+﻿QUESTIONÁRIO 3
+
+Tema: Camadas do modelo TCP/IP
+
+1. O modelo TCP/IP e o modelo OSI distinguem-se pelo número de camadas. Selecione a afirmação correta.
+a) O modelo TCP/IP tem 5 camadas enquanto o modelo OSI tem 7. <<
+b) O modelo TCP/IP tem 7 camadas enquanto o modelo OSI tem 5. 
+c) O modelo TCP/IP tem 3 camadas enquanto o modelo OSI tem 5. 
+d) O modelo TCP/IP tem 4 camadas enquanto o modelo OSI tem 9. 
+
+2. Qual a afirmação que não se aplica à camada de aplicação?
+a) Suporta as aplicações e programas utilitários que recorrem a serviços da camada de transporte. 
+b) Realiza a multiplexação de mensagens. <<
+c) FTP, SMTP, SMTP, TELNET e DNS são exemplos de aplicações mais frequentes.
+d) As aplicações escolhem o tipo de transporte necessário.
+
+3. Qual a afirmação que não se aplica à camada de transporte?
+a) Responsável por controlo de fluxo e de erros.
+b) Responsável pela segmentação e reagrupamento de mensagens.
+c) Fornece a forma de comunicação entre duas aplicações extremo a extremo. 
+d) Comunica com máquinas intermediárias na rede. <<
+
+4. Qual a afirmação que não se aplica à camada de rede?
+a) Fornece a forma de comunicação entre duas máquinas. 
+b) Responsável pelo encaminhamento dos pacotes na rede.
+c) Verifica a validade dos datagramas IP recebidos.
+d) Possui dois protocolos que são o UDP e TCP. <<
+
+5. Qual a afirmação que não se aplica à camada de ligação de dados?
+a) Transmite datagramas IP e envia-os para uma rede específica.
+b) Transmite os datagramas pelo meio físico. <<
+c) Recebe datagramas IP de uma rede específica.
+d) Detecta e pode corrigir erros que possam acontecer na camada física. 

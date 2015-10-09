@@ -1,0 +1,33 @@
+﻿QUESTIONÁRIO 1
+
+Tema: Protocolos
+
+1. O que é um protocolo?
+a) Conjunto de primitivas da API de sockets.
+b) Uma troca de mensagens aleatórias entre máquinas numa rede.
+c) Especifica o tipo e formato dos pacotes trocados entre entidades ao mesmo nível em máquinas distintas que comunicam entre si.
+d) Especifica o tipo e formato das mensagens trocadas entre entidades ao mesmo nível em máquinas distintas que comunicam entre si. <<
+
+2. Qual dos seguintes não é um tipo de protocolo?
+a) UDP
+b) HTML <<
+c) TCP
+d) FTP
+ 
+3. Qual das seguintes afirmações não se aplica ao protocolo UDP?
+a) Localiza-se na camada de transporte.
+b) Não existe garantia que o pacote chegue ao destino.
+c) Recorre à utilização de datagramas.
+d) É neste protocolo que assentam a maioria das aplicações cibernéticas, como o SSH, FTP, HTTP. <<
+
+4. Qual das seguintes afirmações não se aplica ao protocolo TCP?
+a) Proporciona uma entrega confiável dos pacotes de dados.
+b) É um protocolo orientado à conexão.
+c) Verifica se os dados são enviados de forma correta, na sequência apropriada e sem erros.
+d) Recorre à utilização de datagramas. <<
+
+5. Qual a porta por definição para transferência de dados do protocolo FTP?
+a) 20
+b) 21 <<
+c) 40
+d) 80

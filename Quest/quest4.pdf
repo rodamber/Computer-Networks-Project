@@ -1,0 +1,33 @@
+QUESTIONÁRIO 4
+
+Tema: Camada de Aplicação
+
+1. Na arquitecura cliente-servidor, qual das seguintes afirmações é verdadeira?
+a) O servidor tem de ter endereço IP permanente <<
+b) Os clientes comunicam directamente uns com os outros
+c) O servidor tem endereços IP dinamicos
+d) O cliente só pode comunicar com o servidor usando UDP
+
+2. Qual destas chamadas de sistema apenas pode ser encontrada no codigo de um cliente TCP?
+a) read()
+b) write()
+c) connect()
+d) close()
+
+3. Quantos objetos podem ser enviados em cada conexao TCP se considerarmos que estamos a usar HTTP nao persistente?
+a) nenhum 
+b) apenas 5
+c) nao há limite
+d) no máximo 1 <<
+
+4. Qual das seguintes chamadas de sistema desencadeia uma consulta ao DNS?
+a) accept()
+b) bind()
+c) gethostbyname() <<
+d) close()
+
+5. A diferença entre HTTP persistente com pipelining e sem pipelining é que só com pipelining é que:
+a) dois pedidos HTTP podem ocorrer durante a mesma sessao TCP
+b) um novo pedido HTTP pode ser submetido sem que o ultimo tenha sido respondido <<
+c) é possivel abrir várias sessões TCP paralelas para recuperar uma página Web
+d) é possivel transferir mais do que um objeto
